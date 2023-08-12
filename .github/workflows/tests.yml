@@ -1,0 +1,30 @@
+name: Test and Linting
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  container:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.11
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Run linting
+      run: |
+        pip install pylint
+        find . -name "*.py" | xargs pylint --rcfile=.pylintrc
+
+    - name: Run tests
+      run: python -m unittest discover tests

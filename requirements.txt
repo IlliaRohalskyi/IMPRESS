@@ -1,0 +1,12 @@
+pandas
+numpy
+scikit-learn
+matplotlib
+openpyxl
+seaborn
+scikit-learn
+dvc==2.1.0
+mlflow
+pylint
+pytest
+-e .
