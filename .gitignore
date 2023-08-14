@@ -161,3 +161,4 @@ cython_debug/
 /Dataset
 temp.py
 /Synthetic
+/artifacts

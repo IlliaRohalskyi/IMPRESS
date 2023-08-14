@@ -133,7 +133,8 @@ class DataTransformation:
 
             if training_phase:
 
-                train_data, test_data = train_test_split(merged_data_final,
+                train_data, test_data = train_test_split(merged_data_final, shuffle=True,
+                                                         stratify=merged_data_final.waschen,
                                                          test_size=0.1, random_state=42)
 
                 scaler = MinMaxScaler()

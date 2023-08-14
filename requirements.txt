@@ -1,12 +1,15 @@
 pandas
-numpy
+numpy==1.19.0
 scikit-learn
 matplotlib
 openpyxl
 seaborn
-scikit-learn
+optuna
 dvc==2.1.0
 mlflow
 pylint
+catboost
+lightgbm
+xgboost
 pytest
 -e .
