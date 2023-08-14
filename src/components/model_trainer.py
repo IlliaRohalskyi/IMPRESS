@@ -1,15 +1,12 @@
 import os
 import mlflow
-from src.utils import get_project_root, save_pickle
+from src.utils import get_project_root, load_pickle
 import numpy as np
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import mean_absolute_error
 import optuna
-from lightgbm import LGBMRegressor
 from xgboost import XGBRegressor
-from catboost import CatBoostRegressor
-from sklearn.ensemble import AdaBoostRegressor, RandomForestRegressor
-import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import KFold
     
 class ModelTrainer:
@@ -68,28 +65,34 @@ class ModelTrainer:
             model.fit(X_train_fold, y_train_fold)
             predictions = model.predict(X_val_fold)
             mae = mean_absolute_error(y_val_fold, predictions)
+            
             mae_list.append(mae)
-        print('here')
         return np.mean(mae_list)
 
-    
-    def initiate_model_training(self, train, test):
+    def initiate_model_training(self, X_train, y_train, X_test, y_test):
         
-        self.X_train = train[:, :-3]
-        self.y_train = train[:, -3:]
+        self.X_train = X_train
+        self.y_train = y_train
         
-        self.X_test = test[:, :-3]
-        self.y_test = test[:, -3:] 
+        self.X_test = X_test
+        self.y_test = y_test
         
         models = ["xgb", "rf"]
         
         mlflow.set_tracking_uri('https://dagshub.com/IlliaRohalskyi/IMPRESS.mlflow')
 
         with mlflow.start_run() as run:
-            data_ingestion_script_path = os.path.join(get_project_root(), 'src/components/data_ingestion.py')
-            data_transformation_script_path = os.path.join(get_project_root(), 'src/components/data_transformation.py')
-            scaler_path = os.path.join(get_project_root(), 'artifacts/data_processing/scaler.pkl')
-            mlflow.log_artifact(scaler_path, artifact_path="components")
+            data_ingestion_script_path = os.path.join(get_project_root(),
+                                                      'src/components/data_ingestion.py')
+            data_transformation_script_path = os.path.join(get_project_root(),
+                                                           'src/components/data_transformation.py')
+            feature_scaler_path = os.path.join(get_project_root(),
+                                               'artifacts/data_processing/feature_scaler.pkl')
+            target_scaler_path = os.path.join(get_project_root(),
+                                              'artifacts/data_processing/target_scaler.pkl')
+            
+            mlflow.log_artifact(feature_scaler_path, artifact_path="components")
+            mlflow.log_artifact(target_scaler_path, artifact_path="components")
             mlflow.log_artifact(data_ingestion_script_path, artifact_path="components")
             mlflow.log_artifact(data_transformation_script_path, artifact_path="components")
                     
@@ -109,11 +112,20 @@ class ModelTrainer:
                 params_with_prefix = {f"{model_name}_{key}": value for key, value in study.best_params.items()}
 
                 mlflow.log_params(params_with_prefix)
-                mlflow.log_metric(f"{model_name}_val_mae", study.best_value)
+                mlflow.log_metric(f"{model_name}_val_total_mae", study.best_value)
                 
                 best_model = self.create_best_model(model_name, study.best_params)
                 best_models.append(best_model)
+                mlflow.register_model(best_model)
+
+                preds = best_model.predict(self.X_test)
+                mae = mean_absolute_error(self.y_test, preds, multioutput='raw_values')
                 
+                mlflow.log_metric(f"{model_name}_mae_oberflaechenspannung", mae[0])
+                mlflow.log_metric(f"{model_name}_mae_anionischetenside", mae[1])
+                mlflow.log_metric(f"{model_name}_mae_nichtionischentenside", mae[2])
+                mlflow.log_metric(f"{model_name}_mae_total", np.mean(mae))
+            
             ensemble_predictions = np.zeros_like(self.y_test)
             print(ensemble_predictions.shape)
             total_weight = sum(1/mae for mae in best_maes)
@@ -126,13 +138,10 @@ class ModelTrainer:
                 
             ensemble_mae = mean_absolute_error(self.y_test, ensemble_predictions, multioutput='raw_values')
 
-            print("Ensemble MAE for Oberflaechenspannung:", ensemble_mae[0])
-            print("Ensemble MAE for Anionischetenside:", ensemble_mae[1])
-            print("Ensemble MAE for Nichtionischentenside:", ensemble_mae[2])
-
-            mlflow.log_metric("ensemble_mae_bberflaechenspannung", ensemble_mae[0])
+            mlflow.log_metric("ensemble_mae_oberflaechenspannung", ensemble_mae[0])
             mlflow.log_metric("ensemble_mae_anionischetenside", ensemble_mae[1])
             mlflow.log_metric("ensemble_mae_nichtionischentenside", ensemble_mae[2])
+            mlflow.log_metric("ensemble_mae_total", np.mean(ensemble_mae))
 
 
 if __name__ == "__main__":
@@ -142,5 +151,5 @@ if __name__ == "__main__":
     tr = DataTransformation()
     trainer = ModelTrainer()
     off, on = ing.initiate_data_ingestion()
-    train, test = tr.initiate_data_transformation(off, on, True)
-    trainer.initiate_model_training(train, test)
+    x_train, y_train, x_test, y_test = tr.initiate_data_transformation(off, on)
+    trainer.initiate_model_training(x_train, y_train, x_test, y_test)

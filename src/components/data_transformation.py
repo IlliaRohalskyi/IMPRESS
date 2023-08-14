@@ -7,6 +7,7 @@ import sys
 import os
 from dataclasses import dataclass
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from src.logger import logging
@@ -28,7 +29,10 @@ class DataTransformationConfig:
         config = DataTransformationConfig()
         print(config.scaler_path)
     """
-    scaler_path: str = os.path.join(get_project_root(), 'artifacts/data_processing/scaler.pkl')
+    feature_scaler_path: str = os.path.join(get_project_root(),
+                                            'artifacts/data_processing/feature_scaler.pkl')
+    target_scaler_path: str = os.path.join(get_project_root(),
+                                            'artifacts/data_processing/target_scaler.pkl')
 
 class DataTransformation:
     """
@@ -54,7 +58,8 @@ class DataTransformation:
         """
         self.transformation_config = DataTransformationConfig()
 
-    def initiate_data_transformation(self, online_data, offline_data, training_phase):
+    def initiate_data_transformation(self, online_data: pd.DataFrame,
+                                     offline_data: pd.DataFrame):
         """
         Initiate the data transformation process.
 
@@ -63,13 +68,11 @@ class DataTransformation:
         returns transformed data ready for prediction
 
         Returns:
-            if training_phase = True:
-                pandas.DataFrame: dataframe ready for training tasks
-                pandas.DataFrame: dataframe ready for testing tasks
+            if offline_data is not None:
+                train_test np.arrays that are used for training
                 
-            if training_phase = False:
-                pandas.DataFrame: dataframe ready for prediction tasks
-        """
+            else:
+                np.array of features ready for prediction        """
         logging.info("Initiating data transformation")
 
         try:
@@ -90,12 +93,14 @@ class DataTransformation:
                 online_data_final = online_data_dropped.groupby(['experimentnummer',
                                                                 'waschen']).agg(stat_functions)
 
-                online_data_final.columns = [f'{col}_percentile25' if stat == '<lambda_0>' else
-                                            f'{col}_percentile75' if stat == '<lambda_1>' else
-                                            f'{col}_trend' if stat == '<lambda_2>' else
-                                            f'{col}_{stat}' for col, stat
-                                            in online_data_final.columns]
-                return online_data_final
+                online_data_final.columns = [
+                    f'{col}_std' if stat == '<lambda_0>' else
+                    f'{col}_percentile25' if stat == '<lambda_1>' else
+                    f'{col}_percentile75' if stat == '<lambda_2>' else
+                    f'{col}_trend' if stat == '<lambda_3>' else
+                    f'{col}_{stat}' for col, stat in online_data_final.columns
+                    ]
+                return online_data_final.reset_index()
 
             def preprocess_offline_data(offline_data):
                 logging.info("Processing offline data")
@@ -113,41 +118,54 @@ class DataTransformation:
                 return offline_data_clean.drop(columns=['bemerkungen'])
 
             online_data_final = preprocess_online_data(online_data)
-            offline_data_final = preprocess_offline_data(offline_data)
 
-            logging.info("Merging offline and online data")
+            if offline_data is not None:
+                offline_data_final = preprocess_offline_data(offline_data)
 
-            offline_data_target = offline_data_final.loc[:, ['experimentnummer', 'waschen',
-                                                             'oberflaechenspannung',
-                                                             'anionischetenside',
-                                                             'nichtionischentenside']]
+                logging.info("Merging offline and online data")
 
-            merged_data = pd.merge(online_data_final, offline_data_target,
-                                   left_on=['experimentnummer', 'waschen'],
-                                   right_on=['experimentnummer', 'waschen'],
-                                   how='inner')
+                offline_data_target = offline_data_final.loc[:, ['experimentnummer', 'waschen',
+                                                                'oberflaechenspannung',
+                                                                'anionischetenside',
+                                                                'nichtionischentenside']]
 
-            merged_data_final = (
-                merged_data.reset_index(drop=True).drop(columns=['experimentnummer'])
-            )
+                merged_data = pd.merge(online_data_final, offline_data_target,
+                                    left_on=['experimentnummer', 'waschen'],
+                                    right_on=['experimentnummer', 'waschen'],
+                                    how='inner')
 
-            if training_phase:
+                merged_data_final = (
+                    merged_data.reset_index(drop=True).drop(columns=['experimentnummer'])
+                )
 
                 train_data, test_data = train_test_split(merged_data_final, shuffle=True,
                                                          stratify=merged_data_final.waschen,
                                                          test_size=0.1, random_state=42)
+                
+                X_train = train_data.iloc[:, :-3]
+                y_train = train_data.iloc[:, -3:]
+                
+                X_test = test_data.iloc[:, :-3]
+                y_test = test_data.iloc[:, -3:]
+                
+                feature_scaler = MinMaxScaler()
+                target_scaler = MinMaxScaler()
+                
+                X_train_scaled = feature_scaler.fit_transform(X_train)
+                y_train_scaled = target_scaler.fit_transform(y_train)
+                
+                X_test_scaled = np.array(feature_scaler.transform(X_test))
+                y_test_scaled = np.array(target_scaler.transform(y_test))
 
-                scaler = MinMaxScaler()
-                train_data_scaled = scaler.fit_transform(train_data)
+                save_pickle(feature_scaler, self.transformation_config.feature_scaler_path)
+                save_pickle(target_scaler, self.transformation_config.target_scaler_path)
 
-                save_pickle(scaler, self.transformation_config.scaler_path)
+                return X_train_scaled, y_train_scaled, X_test_scaled, y_test_scaled
 
-                test_data_scaled = scaler.transform(test_data)
-
-                return train_data_scaled, test_data_scaled
-
-            scaler = load_pickle(self.transformation_config.scaler_path)
-            return scaler.transform(merged_data_final)
+            feature_scaler = load_pickle(self.transformation_config.feature_scaler_path)
+            print(online_data_final.head())
+            return np.array(feature_scaler.transform(
+                online_data_final.drop(columns=['experimentnummer'])))
 
 
         except Exception as error_message:

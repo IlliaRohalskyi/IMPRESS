@@ -22,12 +22,14 @@ def data_transformation_obj():
         DataTransformation: An instance of the DataTransformation class.
     """
     obj = DataTransformation()
-    obj.transformation_config.scaler_path = os.path.join(get_project_root(), 'tests',
-                                                         'test_data', 'test_scaler.pkl')
+    obj.transformation_config.feature_scaler_path = os.path.join(get_project_root(), 'tests',
+                                                         'test_data', 'test_feature_scaler.pkl')
+    obj.transformation_config.target_scaler_path = os.path.join(get_project_root(), 'tests',
+                                                         'test_data', 'test_target_scaler.pkl')
     return obj
 
 @pytest.mark.parametrize("_", range(100))
-def test_data_transformation(_, data_transformation_object):
+def test_data_transformation(_, data_transformation_obj):
     """
     Test Data Transformation Functionality.
 
@@ -43,7 +45,7 @@ def test_data_transformation(_, data_transformation_object):
     num_offline_samples = 100
 
     random_offline_data = {
-        'experimentnummer': [random.randint(1, 3) for _ in range(num_offline_samples)],
+        'experimentnummer': [random.randint(1, 6) for _ in range(num_offline_samples)],
         'timestamp_probeentnahme': [random.randint(1e+5, 1e+9) for _ in range(num_offline_samples)],
         'timestamp_messung': [random.randint(1e+5, 1e+9) for _ in range(num_offline_samples)],
         'vorschlagnummer': [random.randint(-2, 7) for _ in range(num_offline_samples)],
@@ -66,7 +68,7 @@ def test_data_transformation(_, data_transformation_object):
     }
 
     random_online_data = {
-        'experimentnummer': [random.randint(1, 3) for _ in range(num_online_samples)],
+        'experimentnummer': [random.randint(1, 6) for _ in range(num_online_samples)],
         'timestamp': [random.randint(1e+5, 1e+9) for _ in range(num_online_samples)],
         'waschen': [random.choice([0, 1]) for _ in range(num_online_samples)],
         'spuelen': [],
@@ -100,44 +102,54 @@ def test_data_transformation(_, data_transformation_object):
     offline_train = pd.DataFrame(random_offline_data)
 
     online_pred = pd.DataFrame(random_online_data)
-    offline_pred = pd.DataFrame(random_offline_data)
+    x_train, y_train, x_test, y_test = data_transformation_obj.initiate_data_transformation(online_train,
+                                                                          offline_train)
 
-    train, test = data_transformation_object.initiate_data_transformation(
-        online_train, offline_train, True
-        )
-
-    pred = data_transformation_object.initiate_data_transformation(
-        online_pred, offline_pred, False
-        )
+    x_pred = data_transformation_obj.initiate_data_transformation(online_pred, None)
 
     # Test 1: Outputs are numpy arrays
-    assert np.issubdtype(train.dtype, np.floating)
-    assert np.issubdtype(test.dtype, np.floating)
-    assert np.issubdtype(pred.dtype, np.floating)
+    assert isinstance(x_train, np.ndarray), "x_train should be a numpy array"
+    assert isinstance(y_train, np.ndarray), "y_train should be a numpy array"
+    assert isinstance(x_test, np.ndarray), "x_test should be a numpy array"
+    assert isinstance(y_test, np.ndarray), "y_test should be a numpy array"
+    assert isinstance(x_pred, np.ndarray), "x_pred should be a numpy array"
 
     # Test 2: Float dtype
-    assert train.dtype == np.float64
-    assert test.dtype == np.float64
-    assert pred.dtype == np.float64
+    assert x_train.dtype == np.float64, "x_train dtype should be float64"
+    assert y_train.dtype == np.float64, "y_train dtype should be float64"
+    assert x_test.dtype == np.float64, "x_test dtype should be float64"
+    assert y_test.dtype == np.float64, "y_test dtype should be float64"
+    assert x_pred.dtype == np.float64, "x_pred dtype should be float64"
 
     # Test 3: No NaN
-    assert not np.any(np.isnan(train))
-    assert not np.any(np.isnan(test))
-    assert not np.any(np.isnan(pred))
+    assert not np.any(np.isnan(x_train)), "x_train should not contain NaN values"
+    assert not np.any(np.isnan(y_train)), "y_train should not contain NaN values"
+    assert not np.any(np.isnan(x_test)), "x_test should not contain NaN values"
+    assert not np.any(np.isnan(y_test)), "y_test should not contain NaN values"
+    assert not np.any(np.isnan(x_pred)), "x_pred should not contain NaN values"
 
     # Test 4: Train data is between 0 and 1
-    assert len(train[(train < 0) & (train > 1)]) == 0
+    assert len(x_train[(x_train < 0) & (x_train > 1)]) == 0, "x_train values should be between 0 and 1"
+    assert len(y_train[(y_train < 0) & (y_train > 1)]) == 0, "y_train values should be between 0 and 1"
 
     # Test 5: Check for duplicates in test and train
-    assert len(train) == len(np.unique(train, axis=0))
-    assert len(test) == len(np.unique(test, axis=0))
+    assert len(x_train) == len(np.unique(x_train, axis=0)), "Duplicate rows in x_train"
+    assert len(y_train) == len(np.unique(y_train, axis=0)), "Duplicate rows in y_train"
+    assert len(x_test) == len(np.unique(x_test, axis=0)), "Duplicate rows in x_test"
+    assert len(y_test) == len(np.unique(y_test, axis=0)), "Duplicate rows in y_test"
 
     # Test 6: Check train data points are not in test set and vice versa
-    assert any(not np.any(np.all(row == train, axis=1)) for row in test)
+    for row in x_test:
+        assert not np.any(np.all(row == x_train, axis=1)), "x_train data points found in x_test"
+    for row in y_test:
+        assert not np.any(np.all(row == y_train, axis=1)), "y_train data points found in y_test"
 
     #Test 7: Check if pickle file is present, if yes, delete to check for next iteration
-    pickle_file_path = data_transformation_object.transformation_config.scaler_path
+    feature_scaler_path = data_transformation_obj.transformation_config.feature_scaler_path
+    target_scaler_path = data_transformation_obj.transformation_config.target_scaler_path
+    
+    assert os.path.exists(feature_scaler_path), f"Pickle file '{feature_scaler_path}' is not present"
+    assert os.path.exists(target_scaler_path), f"Pickle file '{target_scaler_path}' is not present"
 
-    assert os.path.exists(pickle_file_path), f"Pickle file '{pickle_file_path}' is not present"
-
-    os.remove(pickle_file_path)
+    os.remove(feature_scaler_path)
+    os.remove(target_scaler_path)
