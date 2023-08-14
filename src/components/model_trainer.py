@@ -1,6 +1,7 @@
 import os
 import mlflow
-from src.utils import get_project_root, load_pickle
+from dataclasses import dataclass
+from src.utils import get_project_root, save_pickle, load_pickle
 import numpy as np
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import mean_absolute_error
@@ -8,20 +9,30 @@ import optuna
 from xgboost import XGBRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import KFold
+
+@dataclass
+class ModelTrainerConfig:
+    data_ingestion_script_path = os.path.join(get_project_root(),
+                                                'src/components/data_ingestion.py')
+
+    data_transformation_script_path = os.path.join(get_project_root(),
+                                                    'src/components/data_transformation.py')
+
+    feature_scaler_path = os.path.join(get_project_root(),
+                                        'artifacts/data_processing/feature_scaler.pkl')
+
+    target_scaler_path = os.path.join(get_project_root(),
+                                        'artifacts/data_processing/target_scaler.pkl')
     
+    model_path = os.path.join(get_project_root(), 'artifacts/models')
 class ModelTrainer:
-    
+    def __init__(self):
+        self.trainer_config = ModelTrainerConfig()
     def create_best_model(self, model_name, best_params):
         if model_name == "rf":
             model = RandomForestRegressor(**best_params)
-        elif model_name == "adaboost":
-            model = AdaBoostRegressor(**best_params)
         elif model_name == "xgb":
             model = XGBRegressor(tree_method='gpu_hist', **best_params)
-        elif model_name == "lgb":
-            model = LGBMRegressor(device='gpu', **best_params)
-        elif model_name == "catboost":
-            model = CatBoostRegressor(logging_level='Silent', task_type='GPU', **best_params)
         else:
             raise ValueError(f"Unsupported model name: {model_name}")
         
@@ -64,9 +75,12 @@ class ModelTrainer:
 
             model.fit(X_train_fold, y_train_fold)
             predictions = model.predict(X_val_fold)
-            mae = mean_absolute_error(y_val_fold, predictions)
+            mae = self.target_scaler.inverse_transform(mean_absolute_error(y_val_fold, predictions, multioutput='raw_values').reshape(1, -1))
             
-            mae_list.append(mae)
+            average_scaled_mae = np.mean(mae)
+            
+            mae_list.append(average_scaled_mae)
+
         return np.mean(mae_list)
 
     def initiate_model_training(self, X_train, y_train, X_test, y_test):
@@ -77,24 +91,25 @@ class ModelTrainer:
         self.X_test = X_test
         self.y_test = y_test
         
+        self.target_scaler = load_pickle(self.trainer_config.target_scaler_path)
+        
         models = ["xgb", "rf"]
         
         mlflow.set_tracking_uri('https://dagshub.com/IlliaRohalskyi/IMPRESS.mlflow')
 
         with mlflow.start_run() as run:
-            data_ingestion_script_path = os.path.join(get_project_root(),
-                                                      'src/components/data_ingestion.py')
-            data_transformation_script_path = os.path.join(get_project_root(),
-                                                           'src/components/data_transformation.py')
-            feature_scaler_path = os.path.join(get_project_root(),
-                                               'artifacts/data_processing/feature_scaler.pkl')
-            target_scaler_path = os.path.join(get_project_root(),
-                                              'artifacts/data_processing/target_scaler.pkl')
             
-            mlflow.log_artifact(feature_scaler_path, artifact_path="components")
-            mlflow.log_artifact(target_scaler_path, artifact_path="components")
-            mlflow.log_artifact(data_ingestion_script_path, artifact_path="components")
-            mlflow.log_artifact(data_transformation_script_path, artifact_path="components")
+            mlflow.log_artifact(self.trainer_config.feature_scaler_path,
+                                artifact_path="scalers")
+
+            mlflow.log_artifact(self.trainer_config.target_scaler_path,
+                                artifact_path="scalers")
+
+            mlflow.log_artifact(self.trainer_config.data_ingestion_script_path,
+                                artifact_path="components")
+
+            mlflow.log_artifact(self.trainer_config.data_transformation_script_path,
+                                artifact_path="components")
                     
             best_models = []
             best_params = []
@@ -116,10 +131,13 @@ class ModelTrainer:
                 
                 best_model = self.create_best_model(model_name, study.best_params)
                 best_models.append(best_model)
-                mlflow.register_model(best_model)
+                
+                model_path = os.path.join(self.trainer_config.model_path, f'{model_name}.pkl')
+                save_pickle(model_path, best_model)
+                mlflow.log_artifacts(model_path, artifact_path='models')
 
                 preds = best_model.predict(self.X_test)
-                mae = mean_absolute_error(self.y_test, preds, multioutput='raw_values')
+                mae = self.target_scaler.inverse_transform(mean_absolute_error(self.y_test, preds, multioutput='raw_values').reshape(1, -1))
                 
                 mlflow.log_metric(f"{model_name}_mae_oberflaechenspannung", mae[0])
                 mlflow.log_metric(f"{model_name}_mae_anionischetenside", mae[1])
@@ -136,7 +154,7 @@ class ModelTrainer:
                 predictions = model.predict(self.X_test)
                 ensemble_predictions += weight * predictions
                 
-            ensemble_mae = mean_absolute_error(self.y_test, ensemble_predictions, multioutput='raw_values')
+            ensemble_mae = self.target_scaler.inverse_transform(mean_absolute_error(self.y_test, ensemble_predictions, multioutput='raw_values'))
 
             mlflow.log_metric("ensemble_mae_oberflaechenspannung", ensemble_mae[0])
             mlflow.log_metric("ensemble_mae_anionischetenside", ensemble_mae[1])
