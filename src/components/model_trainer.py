@@ -1,4 +1,5 @@
 import os
+import subprocess
 import mlflow
 from dataclasses import dataclass
 from src.utils import get_project_root, save_pickle, load_pickle
@@ -30,9 +31,12 @@ class ModelTrainerConfig:
     explainability_path = os.path.join(get_project_root(), 'artifacts/explainability')
     
 class ModelTrainer:
+    
     def __init__(self):
+        self.git_hash = self._get_git_hash()
         self.trainer_config = ModelTrainerConfig()
-    def create_best_model(self, model_name, best_params):
+        
+    def train_model(self, X_train, y_train, model_name, best_params):
         if model_name == "rf":
             model = RandomForestRegressor(**best_params)
         elif model_name == "xgb":
@@ -40,7 +44,7 @@ class ModelTrainer:
         else:
             raise ValueError(f"Unsupported model name: {model_name}")
         
-        model.fit(self.X_train, self.y_train)
+        model.fit(X_train, y_train)
         
         return model
     
@@ -86,6 +90,14 @@ class ModelTrainer:
             mae_list.append(average_scaled_mae)
 
         return np.mean(mae_list)
+    
+    def _get_git_hash(self):
+        try:
+            git_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("utf-8")
+            return git_hash
+        except subprocess.CalledProcessError as e:
+            print(f"Error: Failed to retrieve Git hash. Command returned {e.returncode}: {e.output}")
+            return "Unknown"
 
     def initiate_model_training(self, X_train, y_train, X_test, y_test, feature_names=None):
         
@@ -105,6 +117,8 @@ class ModelTrainer:
 
         with mlflow.start_run() as run:
             
+            mlflow.log_param("git_hash", self.git_hash)
+
             mlflow.log_artifact(self.trainer_config.feature_scaler_path,
                                 artifact_path="scalers")
 
@@ -135,7 +149,7 @@ class ModelTrainer:
                 mlflow.log_params(params_with_prefix)
                 mlflow.log_metric(f"{model_name}_val_total_mae", study.best_value)
                 
-                best_model = self.create_best_model(model_name, study.best_params)
+                best_model = self.train_model(self.X_train, self.y_train, model_name, study.best_params)
                 best_models.append(best_model)
                 
                 os.makedirs(self.trainer_config.model_path, exist_ok=True)
