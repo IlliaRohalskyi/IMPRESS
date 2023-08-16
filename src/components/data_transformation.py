@@ -69,7 +69,8 @@ class DataTransformation:
 
         Returns:
             if offline_data is not None:
-                train_test np.arrays that are used for training
+                train-test np.arrays that are used for training
+                feature names for training
                 
             else:
                 np.array of features ready for prediction        """
@@ -88,7 +89,9 @@ class DataTransformation:
 
                 stat_functions = ['mean', lambda x: 0 if len(x) == 1 else x.std(), 'median',
                                 lambda x: x.quantile(0.25), lambda x: x.quantile(0.75),
-                                lambda x: (x.iloc[-1] - x.iloc[0]) / len(x)]
+                                lambda x: (x.iloc[-1] - x.iloc[0]) / len(x),
+                                lambda x: x.autocorr(lag=50) if len(x) > 51 else 0,
+                                lambda x: x.diff().std() if len(x) > 1 else 0]
 
                 online_data_final = online_data_dropped.groupby(['experimentnummer',
                                                                 'waschen']).agg(stat_functions)
@@ -98,6 +101,8 @@ class DataTransformation:
                     f'{col}_percentile25' if stat == '<lambda_1>' else
                     f'{col}_percentile75' if stat == '<lambda_2>' else
                     f'{col}_trend' if stat == '<lambda_3>' else
+                    f'{col}_autocorr' if stat == '<lambda_4>' else
+                    f'{col}_diff_std' if stat == '<lambda_5>' else
                     f'{col}_{stat}' for col, stat in online_data_final.columns
                     ]
                 return online_data_final.reset_index()
@@ -137,10 +142,11 @@ class DataTransformation:
                 merged_data_final = (
                     merged_data.reset_index(drop=True).drop(columns=['experimentnummer'])
                 )
+                
 
                 train_data, test_data = train_test_split(merged_data_final, shuffle=True,
                                                          stratify=merged_data_final.waschen,
-                                                         test_size=0.1, random_state=42)
+                                                         test_size=0.2, random_state=42)
                 
                 X_train = train_data.iloc[:, :-3]
                 y_train = train_data.iloc[:, -3:]
@@ -160,10 +166,9 @@ class DataTransformation:
                 save_pickle(feature_scaler, self.transformation_config.feature_scaler_path)
                 save_pickle(target_scaler, self.transformation_config.target_scaler_path)
 
-                return X_train_scaled, y_train_scaled, X_test_scaled, y_test_scaled
+                return X_train_scaled, y_train_scaled, X_test_scaled, y_test_scaled, merged_data_final.columns[:-3]
 
             feature_scaler = load_pickle(self.transformation_config.feature_scaler_path)
-            print(online_data_final.head())
             return np.array(feature_scaler.transform(
                 online_data_final.drop(columns=['experimentnummer'])))
 

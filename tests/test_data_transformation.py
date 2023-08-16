@@ -62,7 +62,7 @@ def test_data_transformation(_, data_transformation_obj):
         'ph': [random.uniform(6.7, 7.3) for _ in range(num_offline_samples)],
         'truebung': [random.uniform(8, 13) for _ in range(num_offline_samples)],
         'wasserstoffperoxid': [random.randint(35, 43) for _ in range(num_offline_samples)],
-        'bsbeq': [random.randint(6, 15) for _ in range(num_offline_samples)],
+        'bsbeq': [random.uniform(6, 15) for _ in range(num_offline_samples)],
         'reserv1': [random.uniform(0.02, 0.08) for _ in range(num_offline_samples)],
         'reserv2': [random.uniform(0.02, 0.06) for _ in range(num_offline_samples)],
     }
@@ -83,7 +83,7 @@ def test_data_transformation(_, data_transformation_obj):
         'leitfaehigkeit': [random.uniform(380, 550) for _ in range(num_online_samples)],
         'alkalinitaet': [random.uniform(28, 45) for _ in range(num_online_samples)],
         'vorschlagsnummer': [random.randint(-2, 7) for _ in range(num_online_samples)],
-        'bsbeq': [random.randint(6, 15) for _ in range(num_online_samples)],
+        'bsbeq': [random.uniform(6, 15) for _ in range(num_online_samples)],
         'abs254': [random.uniform(0.08, 0.35) for _ in range(num_online_samples)],
         'abs360': [random.uniform(0.05, 0.18) for _ in range(num_online_samples)],
         'abs210': [random.uniform(0.14, 0.28) for _ in range(num_online_samples)],
@@ -102,7 +102,7 @@ def test_data_transformation(_, data_transformation_obj):
     offline_train = pd.DataFrame(random_offline_data)
 
     online_pred = pd.DataFrame(random_online_data)
-    x_train, y_train, x_test, y_test = data_transformation_obj.initiate_data_transformation(online_train,
+    x_train, y_train, x_test, y_test, _ = data_transformation_obj.initiate_data_transformation(online_train,
                                                                           offline_train)
 
     x_pred = data_transformation_obj.initiate_data_transformation(online_pred, None)
