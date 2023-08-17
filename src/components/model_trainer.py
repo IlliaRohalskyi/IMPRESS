@@ -1,5 +1,8 @@
 import os
+import sys
 import subprocess
+from src.logger import logging
+from src.exception import CustomException
 import mlflow
 from dataclasses import dataclass
 from src.utils import get_project_root, save_pickle, load_pickle
@@ -25,9 +28,7 @@ class ModelTrainerConfig:
 
     target_scaler_path = os.path.join(get_project_root(),
                                         'artifacts/data_processing/target_scaler.pkl')
-    
-    model_path = os.path.join(get_project_root(), 'artifacts/models')
-    
+        
     explainability_path = os.path.join(get_project_root(), 'artifacts/explainability')
     
 class ModelTrainer:
@@ -37,15 +38,19 @@ class ModelTrainer:
         self.trainer_config = ModelTrainerConfig()
         
     def train_model(self, X_train, y_train, model_name, best_params):
-        if model_name == "rf":
-            model = RandomForestRegressor(**best_params)
-        elif model_name == "xgb":
-            model = XGBRegressor(tree_method='gpu_hist', **best_params)
-        else:
-            raise ValueError(f"Unsupported model name: {model_name}")
-        
-        model.fit(X_train, y_train)
-        
+        try:
+            if model_name == "rf":
+                model = RandomForestRegressor(**best_params)
+            elif model_name == "xgb":
+                model = XGBRegressor(tree_method='gpu_hist', **best_params)
+            else:
+                raise ValueError(f"Unsupported model name: {model_name}")
+            
+            model.fit(X_train, y_train)
+        except Exception as error_message:
+            logging.error(f"Model training failed with error: {error_message}")
+            raise CustomException(error_message, sys) from error_message
+
         return model
     
     def objective(self, trial):
@@ -100,91 +105,101 @@ class ModelTrainer:
             return "Unknown"
 
     def initiate_model_training(self, X_train, y_train, X_test, y_test, feature_names=None):
-        
-        self.X_train = X_train
-        self.y_train = y_train
-        
-        self.X_test = X_test
-        self.y_test = y_test
-        
-        self.feature_names = feature_names
-        
-        self.target_scaler = load_pickle(self.trainer_config.target_scaler_path)
-        
-        models = ["xgb", "rf"]
-        
-        mlflow.set_tracking_uri('https://dagshub.com/IlliaRohalskyi/IMPRESS.mlflow')
-
-        with mlflow.start_run() as run:
+        try:
+            self.X_train = X_train
+            self.y_train = y_train
             
-            mlflow.log_param("git_hash", self.git_hash)
+            self.X_test = X_test
+            self.y_test = y_test
+            
+            self.feature_names = feature_names
+            
+            self.target_scaler = load_pickle(self.trainer_config.target_scaler_path)
+            
+            models = ["xgb", "rf"]
+            
+            mlflow.set_tracking_uri('https://dagshub.com/IlliaRohalskyi/IMPRESS.mlflow')
 
-            mlflow.log_artifact(self.trainer_config.feature_scaler_path,
-                                artifact_path="scalers")
+            with mlflow.start_run() as run:
+                
+                mlflow.log_param("git_hash", self.git_hash)
 
-            mlflow.log_artifact(self.trainer_config.target_scaler_path,
-                                artifact_path="scalers")
+                mlflow.log_artifact(self.trainer_config.feature_scaler_path,
+                                    artifact_path="scalers")
 
-            mlflow.log_artifact(self.trainer_config.data_ingestion_script_path,
-                                artifact_path="components")
+                mlflow.log_artifact(self.trainer_config.target_scaler_path,
+                                    artifact_path="scalers")
 
-            mlflow.log_artifact(self.trainer_config.data_transformation_script_path,
-                                artifact_path="components")
+                mlflow.log_artifact(self.trainer_config.data_ingestion_script_path,
+                                    artifact_path="components")
+
+                mlflow.log_artifact(self.trainer_config.data_transformation_script_path,
+                                    artifact_path="components")
+                        
+                best_models = []
+                best_params = []
+                best_maes = []
+                
+                for model_name in models:
+                    self.current_model_name = model_name
                     
-            best_models = []
-            best_params = []
-            best_maes = []
+                    sampler = optuna.samplers.TPESampler(seed=42, n_startup_trials=35)
+                    study = optuna.create_study(direction="minimize", sampler=sampler)
+                    study.optimize(self.objective, n_trials=1, show_progress_bar=True)
+                    
+                    best_params.append(study.best_params)
+                    best_maes.append(study.best_value)
+                    params_with_prefix = {f"{model_name}_{key}": value for key, value in study.best_params.items()}
+
+                    mlflow.log_params(params_with_prefix)
+                    mlflow.log_metric(f"{model_name}_val_total_mae", study.best_value)
+                    
+                    best_model = self.train_model(self.X_train, self.y_train, model_name, study.best_params)
+                    best_models.append(best_model)
+
+                    
+                    if model_name == "xgb":
+                        mlflow.xgboost.log_model(xgb_model=best_model, artifact_path=f'models/{model_name}', registered_model_name=model_name)
+                    elif model_name == "rf":
+                        mlflow.sklearn.log_model(sk_model=best_model, artifact_path=f'models/{model_name}', registered_model_name=model_name)
+                    else:
+                        raise ValueError(f"Unsupported model name: {model_name}")
+
+                    best_models.append(best_model)
+                                        
+                    preds = best_model.predict(self.X_test)
+                    mae = self.target_scaler.inverse_transform(mean_absolute_error(self.y_test, preds, multioutput='raw_values').reshape(1, -1)).flatten()
+
+                    mlflow.log_metric(f"{model_name}_mae_oberflaechenspannung", mae[0])
+                    mlflow.log_metric(f"{model_name}_mae_anionischetenside", mae[1])
+                    mlflow.log_metric(f"{model_name}_mae_nichtionischentenside", mae[2])
+                    mlflow.log_metric(f"{model_name}_mae_total", np.mean(mae))
+                    
+                    if self.feature_names is not None:
+                        self.feature_importance_plot(best_model, model_name)
+                    
+                    mlflow.log_artifacts(self.trainer_config.explainability_path, artifact_path='explainability')
+                
+                ensemble_predictions = np.zeros_like(self.y_test)
+                total_weight = sum(1/mae for mae in best_maes)
+                weights = [1/mae/total_weight for mae in best_maes]
+                mlflow.log_params({"weights": weights})
+                
+                for model, weight in zip(best_models, weights):
+                    predictions = model.predict(self.X_test)
+                    ensemble_predictions += weight * predictions
+                    
+                ensemble_mae = self.target_scaler.inverse_transform(mean_absolute_error(self.y_test, ensemble_predictions, multioutput='raw_values').reshape(1, -1)).flatten()
+
+                mlflow.log_metric("ensemble_mae_oberflaechenspannung", ensemble_mae[0])
+                mlflow.log_metric("ensemble_mae_anionischetenside", ensemble_mae[1])
+                mlflow.log_metric("ensemble_mae_nichtionischentenside", ensemble_mae[2])
+                mlflow.log_metric("ensemble_mae_total", np.mean(ensemble_mae))
             
-            for model_name in models:
-                self.current_model_name = model_name
-                
-                sampler = optuna.samplers.TPESampler(seed=42, n_startup_trials=35)
-                study = optuna.create_study(direction="minimize", sampler=sampler)
-                study.optimize(self.objective, n_trials=100, show_progress_bar=True)
-                
-                best_params.append(study.best_params)
-                best_maes.append(study.best_value)
-                params_with_prefix = {f"{model_name}_{key}": value for key, value in study.best_params.items()}
+        except Exception as error_message:
+            logging.error(f"Initiate model training failed with error: {error_message}")
+            raise CustomException(error_message, sys) from error_message
 
-                mlflow.log_params(params_with_prefix)
-                mlflow.log_metric(f"{model_name}_val_total_mae", study.best_value)
-                
-                best_model = self.train_model(self.X_train, self.y_train, model_name, study.best_params)
-                best_models.append(best_model)
-                
-                os.makedirs(self.trainer_config.model_path, exist_ok=True)
-                model_path = os.path.join(self.trainer_config.model_path, f'{model_name}.pkl')
-                save_pickle(best_model, model_path)
-                mlflow.log_artifact(model_path, artifact_path='models')
-
-                preds = best_model.predict(self.X_test)
-                mae = self.target_scaler.inverse_transform(mean_absolute_error(self.y_test, preds, multioutput='raw_values').reshape(1, -1)).flatten()
-
-                mlflow.log_metric(f"{model_name}_mae_oberflaechenspannung", mae[0])
-                mlflow.log_metric(f"{model_name}_mae_anionischetenside", mae[1])
-                mlflow.log_metric(f"{model_name}_mae_nichtionischentenside", mae[2])
-                mlflow.log_metric(f"{model_name}_mae_total", np.mean(mae))
-                
-                if self.feature_names is not None:
-                    self.feature_importance_plot(best_model, model_name)
-                
-                mlflow.log_artifacts(self.trainer_config.explainability_path, artifact_path='explainability')
-            
-            ensemble_predictions = np.zeros_like(self.y_test)
-            total_weight = sum(1/mae for mae in best_maes)
-            weights = [1/mae/total_weight for mae in best_maes]
-            mlflow.log_params({"weights": weights})
-            
-            for model, weight in zip(best_models, weights):
-                predictions = model.predict(self.X_test)
-                ensemble_predictions += weight * predictions
-                
-            ensemble_mae = self.target_scaler.inverse_transform(mean_absolute_error(self.y_test, ensemble_predictions, multioutput='raw_values').reshape(1, -1)).flatten()
-
-            mlflow.log_metric("ensemble_mae_oberflaechenspannung", ensemble_mae[0])
-            mlflow.log_metric("ensemble_mae_anionischetenside", ensemble_mae[1])
-            mlflow.log_metric("ensemble_mae_nichtionischentenside", ensemble_mae[2])
-            mlflow.log_metric("ensemble_mae_total", np.mean(ensemble_mae))
                 
     def feature_importance_plot(self, model, model_name):
         feature_importances = model.feature_importances_
