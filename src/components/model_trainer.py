@@ -13,60 +13,72 @@ Dataclasses:
     TrainTestData: Dataclass representing training and testing data along with feature names.
 
 Usage:
-    Instantiate the ModelTrainer class with TrainTestData, call initiate_model_training() 
+    Instantiate the ModelTrainer class with TrainTestData, call initiate_model_training()
     to train models using hyperparameter optimization, and log results and artifacts to MLflow.
 """
 import os
-from typing import List
-import sys
 import subprocess
+import sys
 from dataclasses import dataclass
+from typing import List
+
+import matplotlib.pyplot as plt
 import mlflow
 import numpy as np
 import optuna
-from xgboost import XGBRegressor
-from sklearn.metrics import mean_absolute_error
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import KFold
-import matplotlib.pyplot as plt
-from src.logger import logging
+from xgboost import XGBRegressor
+
 from src.exception import CustomException
+from src.logger import logging
 from src.utils import get_project_root, load_pickle
+
 
 @dataclass
 class ModelTrainerPaths:
     """
     Paths for various components used by ModelTrainer.
     """
-    data_ingestion_script_path = os.path.join(get_project_root(),
-                                                'src/components/data_ingestion.py')
 
-    data_transformation_script_path = os.path.join(get_project_root(),
-                                                    'src/components/data_transformation.py')
+    data_ingestion_script_path = os.path.join(
+        get_project_root(), "src/components/data_ingestion.py"
+    )
 
-    feature_scaler_path = os.path.join(get_project_root(),
-                                        'artifacts/data_processing/feature_scaler.pkl')
+    data_transformation_script_path = os.path.join(
+        get_project_root(), "src/components/data_transformation.py"
+    )
 
-    target_scaler_path = os.path.join(get_project_root(),
-                                        'artifacts/data_processing/target_scaler.pkl')
+    feature_scaler_path = os.path.join(
+        get_project_root(), "artifacts/data_processing/feature_scaler.pkl"
+    )
 
-    explainability_path = os.path.join(get_project_root(), 'artifacts/explainability')
+    target_scaler_path = os.path.join(
+        get_project_root(), "artifacts/data_processing/target_scaler.pkl"
+    )
+
+    explainability_path = os.path.join(get_project_root(), "artifacts/explainability")
+
 
 @dataclass
 class TrainTestData:
     """
     Container for training and testing data along with feature names.
     """
+
     x_train: np.ndarray
     y_train: np.ndarray
     x_test: np.ndarray
     y_test: np.ndarray
     feature_names: List[str]
 
+
 class ModelTrainer:
     """
     Class for training and evaluating machine learning models.
     """
+
     def __init__(self, train_test_data: TrainTestData):
         """
         Initialize the ModelTrainer.
@@ -92,12 +104,12 @@ class ModelTrainer:
             model: Trained machine learning model.
         """
         try:
-            logging.info('Training model')
+            logging.info("Training model")
 
             if model_name == "rf":
                 model = RandomForestRegressor(**best_params)
             elif model_name == "xgb":
-                model = XGBRegressor(tree_method='gpu_hist', **best_params)
+                model = XGBRegressor(tree_method="gpu_hist", **best_params)
             else:
                 raise ValueError(f"Unsupported model name: {model_name}")
 
@@ -123,39 +135,45 @@ class ModelTrainer:
 
         if model_name == "xgb":
             model = XGBRegressor(
-                n_estimators=trial.suggest_int('n_estimators', 5, 30000),
-                max_depth=trial.suggest_int('max_depth', 3, 30000),
-                learning_rate=trial.suggest_float('learning_rate', 0.001, 0.3),
-                subsample=trial.suggest_float('subsample', 0.1, 1.0),
-                colsample_bytree=trial.suggest_float('colsample_bytree', 0.1, 1.0),
-                gamma=trial.suggest_float('gamma', 0, 10),
-                min_child_weight=trial.suggest_int('min_child_weight', 1, 20),
-                reg_alpha=trial.suggest_float('reg_alpha', 0, 1),
-                reg_lambda=trial.suggest_float('reg_lambda', 0, 1),
+                n_estimators=trial.suggest_int("n_estimators", 5, 30000),
+                max_depth=trial.suggest_int("max_depth", 3, 30000),
+                learning_rate=trial.suggest_float("learning_rate", 0.001, 0.3),
+                subsample=trial.suggest_float("subsample", 0.1, 1.0),
+                colsample_bytree=trial.suggest_float("colsample_bytree", 0.1, 1.0),
+                gamma=trial.suggest_float("gamma", 0, 10),
+                min_child_weight=trial.suggest_int("min_child_weight", 1, 20),
+                reg_alpha=trial.suggest_float("reg_alpha", 0, 1),
+                reg_lambda=trial.suggest_float("reg_lambda", 0, 1),
             )
         elif model_name == "rf":
             model = RandomForestRegressor(
-                n_estimators=trial.suggest_int('n_estimators', 5, 30000),
-                max_depth=trial.suggest_int('max_depth', 3, 30000),
-                min_samples_split=trial.suggest_int('min_samples_split', 2, 30),
-                min_samples_leaf=trial.suggest_int('min_samples_leaf', 1, 15),
-                max_features=trial.suggest_float('max_features', 0.1, 1),
-                bootstrap=trial.suggest_categorical('bootstrap', [True, False]),
+                n_estimators=trial.suggest_int("n_estimators", 5, 30000),
+                max_depth=trial.suggest_int("max_depth", 3, 30000),
+                min_samples_split=trial.suggest_int("min_samples_split", 2, 30),
+                min_samples_leaf=trial.suggest_int("min_samples_leaf", 1, 15),
+                max_features=trial.suggest_float("max_features", 0.1, 1),
+                bootstrap=trial.suggest_categorical("bootstrap", [True, False]),
             )
 
         mae_list = []
         k_fold = KFold(n_splits=5, shuffle=True, random_state=42)
 
         for train_idx, val_idx in k_fold.split(self.data.x_train, self.data.y_train):
-            x_train_fold, x_val_fold = self.data.x_train[train_idx], self.data.x_train[val_idx]
-            y_train_fold, y_val_fold = self.data.y_train[train_idx], self.data.y_train[val_idx]
+            x_train_fold, x_val_fold = (
+                self.data.x_train[train_idx],
+                self.data.x_train[val_idx],
+            )
+            y_train_fold, y_val_fold = (
+                self.data.y_train[train_idx],
+                self.data.y_train[val_idx],
+            )
 
             model.fit(x_train_fold, y_train_fold)
             predictions = model.predict(x_val_fold)
 
             mae = self.target_scaler.inverse_transform(
-            mean_absolute_error(
-                    y_val_fold, predictions, multioutput='raw_values'
+                mean_absolute_error(
+                    y_val_fold, predictions, multioutput="raw_values"
                 ).reshape(1, -1)
             )
 
@@ -173,13 +191,19 @@ class ModelTrainer:
             str: Git hash.
         """
         try:
-            logging.info('Getting git hash')
+            logging.info("Getting git hash")
 
-            git_hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("utf-8")
+            git_hash = (
+                subprocess.check_output(["git", "rev-parse", "HEAD"])
+                .strip()
+                .decode("utf-8")
+            )
             return git_hash
         except subprocess.CalledProcessError as error_message:
-            logging.error(f"Error: Failed to retrieve Git hash. "
-                          f"Command returned {error_message.returncode}: {error_message.output}")
+            logging.error(
+                f"Error: Failed to retrieve Git hash. "
+                f"Command returned {error_message.returncode}: {error_message.output}"
+            )
             return "Unknown"
 
     def initiate_model_training(self):
@@ -187,30 +211,34 @@ class ModelTrainer:
         Initialize the model training process.
         """
         try:
-            logging.info('Starting model training')
-
+            logging.info("Starting model training")
 
             self.target_scaler = load_pickle(self.trainer_paths.target_scaler_path)
 
             models = ["xgb", "rf"]
 
-            mlflow.set_tracking_uri('https://dagshub.com/IlliaRohalskyi/IMPRESS.mlflow')
+            mlflow.set_tracking_uri("https://dagshub.com/IlliaRohalskyi/IMPRESS.mlflow")
 
             with mlflow.start_run():
-
                 mlflow.log_param("git_hash", self.git_hash)
 
-                mlflow.log_artifact(self.trainer_paths.feature_scaler_path,
-                                    artifact_path="scalers")
+                mlflow.log_artifact(
+                    self.trainer_paths.feature_scaler_path, artifact_path="scalers"
+                )
 
-                mlflow.log_artifact(self.trainer_paths.target_scaler_path,
-                                    artifact_path="scalers")
+                mlflow.log_artifact(
+                    self.trainer_paths.target_scaler_path, artifact_path="scalers"
+                )
 
-                mlflow.log_artifact(self.trainer_paths.data_ingestion_script_path,
-                                    artifact_path="components")
+                mlflow.log_artifact(
+                    self.trainer_paths.data_ingestion_script_path,
+                    artifact_path="components",
+                )
 
-                mlflow.log_artifact(self.trainer_paths.data_transformation_script_path,
-                                    artifact_path="components")
+                mlflow.log_artifact(
+                    self.trainer_paths.data_transformation_script_path,
+                    artifact_path="components",
+                )
 
                 best_models = []
                 best_maes = []
@@ -234,7 +262,6 @@ class ModelTrainer:
             logging.error(f"Initiate model training failed with error: {error_message}")
             raise CustomException(error_message, sys) from error_message
 
-
     def feature_importance_plot(self, model, model_name):
         """
         Generate and save a feature importance plot.
@@ -244,7 +271,7 @@ class ModelTrainer:
             model_name (str): Name of the model.
         """
         try:
-            logging.info('Executing feature importance plots')
+            logging.info("Executing feature importance plots")
 
             feature_importances = model.feature_importances_
             n_features = len(feature_importances)
@@ -264,13 +291,16 @@ class ModelTrainer:
             os.makedirs(self.trainer_paths.explainability_path, exist_ok=True)
             plt.savefig(
                 os.path.join(
-                    self.trainer_paths.explainability_path, f"{model_name}_feature_importance.png"
-                    )
+                    self.trainer_paths.explainability_path,
+                    f"{model_name}_feature_importance.png",
                 )
+            )
             plt.close()
 
         except Exception as error_message:
-            logging.error(f"Feature importance plot generation failed with error: {error_message}")
+            logging.error(
+                f"Feature importance plot generation failed with error: {error_message}"
+            )
             raise CustomException(error_message, sys) from error_message
 
     def log_ensemble_metrics(self, best_maes, best_models):
@@ -282,11 +312,11 @@ class ModelTrainer:
             best_models (list): List of best trained models.
         """
         try:
-            logging.info('logging ensemble metrics')
+            logging.info("logging ensemble metrics")
 
             ensemble_predictions = np.zeros_like(self.data.y_test)
-            total_weight = sum(1/mae for mae in best_maes)
-            weights = [1/mae/total_weight for mae in best_maes]
+            total_weight = sum(1 / mae for mae in best_maes)
+            weights = [1 / mae / total_weight for mae in best_maes]
             mlflow.log_params({"weights": weights})
 
             for model, weight in zip(best_models, weights):
@@ -295,7 +325,7 @@ class ModelTrainer:
 
             ensemble_mae = self.target_scaler.inverse_transform(
                 mean_absolute_error(
-                    self.data.y_test, ensemble_predictions, multioutput='raw_values'
+                    self.data.y_test, ensemble_predictions, multioutput="raw_values"
                 ).reshape(1, -1)
             ).flatten()
 
@@ -305,9 +335,10 @@ class ModelTrainer:
             mlflow.log_metric("ensemble_mae_total", np.mean(ensemble_mae))
 
         except Exception as error_message:
-            logging.error(f"Logging ensemble metrics failed with error: {error_message}")
+            logging.error(
+                f"Logging ensemble metrics failed with error: {error_message}"
+            )
             raise CustomException(error_message, sys) from error_message
-
 
     def train_and_log_model(self, model_name, study):
         """
@@ -325,7 +356,7 @@ class ModelTrainer:
 
             params_with_prefix = {
                 f"{model_name}_{key}": value for key, value in study.best_params.items()
-                }
+            }
 
             mlflow.log_params(params_with_prefix)
             mlflow.log_metric(f"{model_name}_val_total_mae", study.best_value)
@@ -333,24 +364,28 @@ class ModelTrainer:
             best_model = self.train_model(model_name, study.best_params)
 
             if model_name == "xgb":
-                mlflow.xgboost.log_model(xgb_model=best_model,
-                                        artifact_path=f'models/{model_name}',
-                                        registered_model_name=model_name)
+                mlflow.xgboost.log_model(
+                    xgb_model=best_model,
+                    artifact_path=f"models/{model_name}",
+                    registered_model_name=model_name,
+                )
 
             elif model_name == "rf":
-                mlflow.sklearn.log_model(sk_model=best_model,
-                                        artifact_path=f'models/{model_name}',
-                                        registered_model_name=model_name)
+                mlflow.sklearn.log_model(
+                    sk_model=best_model,
+                    artifact_path=f"models/{model_name}",
+                    registered_model_name=model_name,
+                )
             else:
                 raise ValueError(f"Unsupported model name: {model_name}")
 
             preds = best_model.predict(self.data.x_test)
 
             mae = self.target_scaler.inverse_transform(
-                    mean_absolute_error(
-                        self.data.y_test, preds, multioutput='raw_values'
-                    ).reshape(1, -1)
-                ).flatten()
+                mean_absolute_error(
+                    self.data.y_test, preds, multioutput="raw_values"
+                ).reshape(1, -1)
+            ).flatten()
 
             mlflow.log_metric(f"{model_name}_mae_oberflaechenspannung", mae[0])
             mlflow.log_metric(f"{model_name}_mae_anionischetenside", mae[1])
@@ -362,11 +397,13 @@ class ModelTrainer:
 
                 mlflow.log_artifacts(
                     self.trainer_paths.explainability_path,
-                    artifact_path='explainability'
-                    )
+                    artifact_path="explainability",
+                )
 
             return (best_model, study.best_value)
 
         except Exception as error_message:
-            logging.error(f"Training and logging best model failed with error: {error_message}")
+            logging.error(
+                f"Training and logging best model failed with error: {error_message}"
+            )
             raise CustomException(error_message, sys) from error_message

@@ -4,12 +4,15 @@ Test Data Ingestion.
 This module contains test cases for the DataIngestion class from the data_ingestion module.
 """
 import os
+
 import pandas as pd
 import pytest
-from src.utils import get_project_root
-from src.components.data_ingestion import DataIngestion
 
-@pytest.fixture(name='data_ingestion_object')
+from src.components.data_ingestion import DataIngestion
+from src.utils import get_project_root
+
+
+@pytest.fixture(name="data_ingestion_object")
 def fixture_data_ingestion_object():
     """
     Fixture for DataIngestion Object.
@@ -21,13 +24,16 @@ def fixture_data_ingestion_object():
         DataIngestion: An instance of the DataIngestion class.
     """
     data_ingestion_object = DataIngestion()
-    offline_data_path = os.path.join(get_project_root(), 'tests', 'test_data',
-                                     'synthetic_offline.csv')
-    online_data_path = os.path.join(get_project_root(), 'tests', 'test_data',
-                                    'synthetic_online.csv')
+    offline_data_path = os.path.join(
+        get_project_root(), "tests", "test_data", "synthetic_offline.csv"
+    )
+    online_data_path = os.path.join(
+        get_project_root(), "tests", "test_data", "synthetic_online.csv"
+    )
     data_ingestion_object.ingestion_config.offline_data_path = offline_data_path
     data_ingestion_object.ingestion_config.online_data_path = online_data_path
     return data_ingestion_object
+
 
 def test_data_ingestion(data_ingestion_object):
     """

@@ -3,13 +3,16 @@ Data Ingestion Module.
 
 This module provides a class with a method for data ingestion tasks
 """
-from dataclasses import dataclass
 import os
 import sys
+from dataclasses import dataclass
+
 import pandas as pd
-from src.logger import logging
+
 from src.exception import CustomException
+from src.logger import logging
 from src.utils import get_project_root
+
 
 @dataclass
 class DataIngestionConfig:
@@ -23,21 +26,26 @@ class DataIngestionConfig:
         offline_data_path (str): The default path of the offline data file.
         online_data_path (str): The default path of the online data file.
     """
-    offline_data_path: str = os.path.join(get_project_root(),
-                                r'Dataset\20220311_114449_impress_backup_offlinemessungen.csv')
-    online_data_path: str = os.path.join(get_project_root(),
-                                r'Dataset\20220311_114449_impress_backup_sensors.csv')
+
+    offline_data_path: str = os.path.join(
+        get_project_root(),
+        r"Dataset\20220311_114449_impress_backup_offlinemessungen.csv",
+    )
+    online_data_path: str = os.path.join(
+        get_project_root(), r"Dataset\20220311_114449_impress_backup_sensors.csv"
+    )
 
 
 class DataIngestion:
     """
     Data ingestion class.
-    
+
     This class provides a method for data ingestion tasks.
-    
+
     Attributes:
         ingestion_config (DataIngestionConfig): The configuration settings for data ingestion tasks.
     """
+
     def __init__(self):
         """
         Initialize the DataIngestion instance.
@@ -63,11 +71,9 @@ class DataIngestion:
         try:
             logging.info("Reading data")
 
-            offline_data = pd.read_csv(self.ingestion_config.offline_data_path,
-                                       sep=';')
+            offline_data = pd.read_csv(self.ingestion_config.offline_data_path, sep=";")
 
-            online_data = pd.read_csv(self.ingestion_config.online_data_path,
-                                      sep=';')
+            online_data = pd.read_csv(self.ingestion_config.online_data_path, sep=";")
 
             logging.info("Data ingestion completed successfully")
             return online_data, offline_data
@@ -75,4 +81,3 @@ class DataIngestion:
         except Exception as error_message:
             logging.error(f"Data ingestion failed with error: {error_message}")
             raise CustomException(error_message, sys) from error_message
-        

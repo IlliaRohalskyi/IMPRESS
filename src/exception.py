@@ -5,6 +5,7 @@ Defines a custom exception class and a utility function for detailed error messa
 """
 import sys
 
+
 def error_message_details(error, error_detail: sys):
     """
     Generate an error message with details.
@@ -28,6 +29,7 @@ def error_message_details(error, error_detail: sys):
     )
 
     return error_message
+
 
 class CustomException(Exception):
     """
@@ -53,7 +55,9 @@ class CustomException(Exception):
             error_detail (sys): The sys module detail of the error.
         """
         super().__init__(error_message)
-        self.error_message = error_message_details(error_message, error_detail=error_detail)
+        self.error_message = error_message_details(
+            error_message, error_detail=error_detail
+        )
 
     def __str__(self):
         """
