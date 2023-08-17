@@ -43,10 +43,6 @@ class DataTransformation:
     Attributes:
         transformation_config (DataTransformationConfig):
                     The configuration settings for data transformation tasks.
-    
-    Example:
-        obj = DataTransformation()
-        train_data, test_data = obj.initiate_data_transformation(online_data, offline_data, True)
     """
     def __init__(self):
         """
@@ -73,59 +69,15 @@ class DataTransformation:
                 feature names for training
                 
             else:
-                np.array of features ready for prediction        """
+                np.array of features ready for prediction        
+        """
         logging.info("Initiating data transformation")
 
         try:
-            def preprocess_online_data(online_data):
-                logging.info("Processing online data")
-                online_df = online_data[online_data['vorschlagsnummer'] >= 0]
-                online_df.drop_duplicates(inplace=True)
-
-                online_data_dropped = online_df.drop(columns=['timestamp', 'spuelen',
-                                                            'vorschlagsnummer', 'reserv1',
-                                                            'reserv2', 'druck2',
-                                                            'druck3', 'fluss2'])
-
-                stat_functions = ['mean', lambda x: 0 if len(x) == 1 else x.std(), 'median',
-                                lambda x: x.quantile(0.25), lambda x: x.quantile(0.75),
-                                lambda x: (x.iloc[-1] - x.iloc[0]) / len(x),
-                                lambda x: x.autocorr(lag=50) if len(x) > 51 else 0,
-                                lambda x: x.diff().std() if len(x) > 1 else 0]
-
-                online_data_final = online_data_dropped.groupby(['experimentnummer',
-                                                                'waschen']).agg(stat_functions)
-
-                online_data_final.columns = [
-                    f'{col}_std' if stat == '<lambda_0>' else
-                    f'{col}_percentile25' if stat == '<lambda_1>' else
-                    f'{col}_percentile75' if stat == '<lambda_2>' else
-                    f'{col}_trend' if stat == '<lambda_3>' else
-                    f'{col}_autocorr' if stat == '<lambda_4>' else
-                    f'{col}_diff_std' if stat == '<lambda_5>' else
-                    f'{col}_{stat}' for col, stat in online_data_final.columns
-                    ]
-                return online_data_final.reset_index()
-
-            def preprocess_offline_data(offline_data):
-                logging.info("Processing offline data")
-
-                offline_data.drop_duplicates(inplace=True)
-                offline_grouped = offline_data.groupby(['experimentnummer',
-                                                        'bemerkungen']).mean().reset_index()
-
-                offline_grouped['waschen'] = offline_grouped['bemerkungen'].map({'S1': 0, 'W1': 1})
-
-                offline_data_clean = offline_grouped[
-                    offline_grouped['bemerkungen'].isin(['S1', 'W1'])
-                    ]
-
-                return offline_data_clean.drop(columns=['bemerkungen'])
-
-            online_data_final = preprocess_online_data(online_data)
+            online_data_final = self.preprocess_online_data(online_data)
 
             if offline_data is not None:
-                offline_data_final = preprocess_offline_data(offline_data)
+                offline_data_final = self.preprocess_offline_data(offline_data)
 
                 logging.info("Merging offline and online data")
 
@@ -142,37 +94,106 @@ class DataTransformation:
                 merged_data_final = (
                     merged_data.reset_index(drop=True).drop(columns=['experimentnummer'])
                 )
-                
 
                 train_data, test_data = train_test_split(merged_data_final, shuffle=True,
                                                          stratify=merged_data_final.waschen,
                                                          test_size=0.2, random_state=42)
-                
-                X_train = train_data.iloc[:, :-3]
+
+                x_train = train_data.iloc[:, :-3]
                 y_train = train_data.iloc[:, -3:]
-                
-                X_test = test_data.iloc[:, :-3]
+
+                x_test = test_data.iloc[:, :-3]
                 y_test = test_data.iloc[:, -3:]
-                
+
                 feature_scaler = MinMaxScaler()
                 target_scaler = MinMaxScaler()
-                
-                X_train_scaled = feature_scaler.fit_transform(X_train)
+
+                x_train_scaled = feature_scaler.fit_transform(x_train)
                 y_train_scaled = target_scaler.fit_transform(y_train)
-                
-                X_test_scaled = np.array(feature_scaler.transform(X_test))
+
+                x_test_scaled = np.array(feature_scaler.transform(x_test))
                 y_test_scaled = np.array(target_scaler.transform(y_test))
 
                 save_pickle(feature_scaler, self.transformation_config.feature_scaler_path)
                 save_pickle(target_scaler, self.transformation_config.target_scaler_path)
 
-                return X_train_scaled, y_train_scaled, X_test_scaled, y_test_scaled, merged_data_final.columns[:-3]
+                return (
+                    x_train_scaled, y_train_scaled, x_test_scaled,
+                    y_test_scaled, merged_data_final.columns[:-3]
+                )
 
             feature_scaler = load_pickle(self.transformation_config.feature_scaler_path)
             return np.array(feature_scaler.transform(
                 online_data_final.drop(columns=['experimentnummer'])))
 
-
         except Exception as error_message:
             logging.error(f"Data transformation failed with error: {error_message}")
             raise CustomException(error_message, sys) from error_message
+
+    def preprocess_online_data(self, online_data):
+        """
+        Preprocess the online data.
+
+        This method performs preprocessing steps on the given online data.
+
+        Args:
+            online_data (pd.DataFrame): The online data to be preprocessed.
+
+        Returns:
+            pd.DataFrame: The preprocessed online data.
+        """
+        logging.info("Processing online data")
+
+        online_df = online_data[online_data['vorschlagsnummer'] >= 0]
+        online_df.drop_duplicates(inplace=True)
+
+        online_data_dropped = online_df.drop(columns=['timestamp', 'spuelen',
+                                                    'vorschlagsnummer', 'reserv1',
+                                                    'reserv2', 'druck2',
+                                                    'druck3', 'fluss2'])
+
+        stat_functions = ['mean', lambda x: 0 if len(x) == 1 else x.std(), 'median',
+                        lambda x: x.quantile(0.25), lambda x: x.quantile(0.75),
+                        lambda x: (x.iloc[-1] - x.iloc[0]) / len(x),
+                        lambda x: x.autocorr(lag=50) if len(x) > 51 else 0,
+                        lambda x: x.diff().std() if len(x) > 1 else 0]
+
+        online_data_final = online_data_dropped.groupby(['experimentnummer',
+                                                        'waschen']).agg(stat_functions)
+
+        online_data_final.columns = [
+            f'{col}_std' if stat == '<lambda_0>' else
+            f'{col}_percentile25' if stat == '<lambda_1>' else
+            f'{col}_percentile75' if stat == '<lambda_2>' else
+            f'{col}_trend' if stat == '<lambda_3>' else
+            f'{col}_autocorr' if stat == '<lambda_4>' else
+            f'{col}_diff_std' if stat == '<lambda_5>' else
+            f'{col}_{stat}' for col, stat in online_data_final.columns
+            ]
+        return online_data_final.reset_index()
+
+    def preprocess_offline_data(self, offline_data):
+        """
+        Preprocess the offline data.
+
+        This method performs preprocessing steps on the given offline data.
+
+        Args:
+            offline_data (pd.DataFrame): The offline data to be preprocessed.
+
+        Returns:
+            pd.DataFrame: The preprocessed offline data.
+        """
+        logging.info("Processing offline data")
+
+        offline_data.drop_duplicates(inplace=True)
+        offline_grouped = offline_data.groupby(['experimentnummer',
+                                                'bemerkungen']).mean().reset_index()
+
+        offline_grouped['waschen'] = offline_grouped['bemerkungen'].map({'S1': 0, 'W1': 1})
+
+        offline_data_clean = offline_grouped[
+            offline_grouped['bemerkungen'].isin(['S1', 'W1'])
+            ]
+
+        return offline_data_clean.drop(columns=['bemerkungen'])

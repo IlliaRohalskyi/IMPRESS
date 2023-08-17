@@ -42,13 +42,6 @@ class CustomException(Exception):
 
     Attributes:
         error_message (str): The formatted error message.
-
-    Example:
-        try:
-            # Code that may raise an error
-            raise CustomException("This is a custom error message.", sys.exc_info())
-        except CustomException as e:
-            print(e)  # Display the custom error message with script details.
     """
 
     def __init__(self, error_message, error_detail: sys):

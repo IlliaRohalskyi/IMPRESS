@@ -22,10 +22,6 @@ class DataIngestionConfig:
     Attributes:
         offline_data_path (str): The default path of the offline data file.
         online_data_path (str): The default path of the online data file.
-
-    Example:
-        config = DataIngestionConfig()
-        print(config.online_data_name)
     """
     offline_data_path: str = os.path.join(get_project_root(),
                                 r'Dataset\20220311_114449_impress_backup_offlinemessungen.csv')
@@ -41,10 +37,6 @@ class DataIngestion:
     
     Attributes:
         ingestion_config (DataIngestionConfig): The configuration settings for data ingestion tasks.
-    
-    Example:
-        obj = DataIngestion()
-        online_data, offline_data = obj.initiate_data_ingestion()
     """
     def __init__(self):
         """

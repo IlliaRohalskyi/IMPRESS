@@ -8,6 +8,7 @@ optuna
 dvc==2.1.0
 mlflow
 pylint
+pre-commit
 catboost
 lightgbm
 xgboost

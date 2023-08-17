@@ -11,8 +11,8 @@ import pytest
 from src.utils import get_project_root
 from src.components.data_transformation import DataTransformation
 
-@pytest.fixture
-def data_transformation_obj():
+@pytest.fixture(name="data_transformation_obj")
+def fixture_data_transformation_obj():
     """
     Fixture for DataTransformation Object.
 
@@ -37,9 +37,7 @@ def test_data_transformation(_, data_transformation_obj):
     in the DataTransformation class.
 
     Args:
-        data_transformation_object (DataTransformation instance)
-    Returns:
-        None
+        data_transformation_obj (DataTransformation instance)
     """
     num_online_samples = 1000
     num_offline_samples = 100
@@ -102,8 +100,8 @@ def test_data_transformation(_, data_transformation_obj):
     offline_train = pd.DataFrame(random_offline_data)
 
     online_pred = pd.DataFrame(random_online_data)
-    x_train, y_train, x_test, y_test, _ = data_transformation_obj.initiate_data_transformation(online_train,
-                                                                          offline_train)
+    x_train, y_train, x_test, y_test, _ = data_transformation_obj.initiate_data_transformation(
+        online_train, offline_train)
 
     x_pred = data_transformation_obj.initiate_data_transformation(online_pred, None)
 
@@ -129,8 +127,8 @@ def test_data_transformation(_, data_transformation_obj):
     assert not np.any(np.isnan(x_pred)), "x_pred should not contain NaN values"
 
     # Test 4: Train data is between 0 and 1
-    assert len(x_train[(x_train < 0) & (x_train > 1)]) == 0, "x_train values should be between 0 and 1"
-    assert len(y_train[(y_train < 0) & (y_train > 1)]) == 0, "y_train values should be between 0 and 1"
+    assert len(x_train[(x_train < 0) & (x_train > 1)]) == 0, "x_train are not in 0 and 1 range"
+    assert len(y_train[(y_train < 0) & (y_train > 1)]) == 0, "y_train are not in 0 and 1 range"
 
     # Test 5: Check for duplicates in test and train
     assert len(x_train) == len(np.unique(x_train, axis=0)), "Duplicate rows in x_train"
@@ -147,9 +145,9 @@ def test_data_transformation(_, data_transformation_obj):
     #Test 7: Check if pickle file is present, if yes, delete to check for next iteration
     feature_scaler_path = data_transformation_obj.transformation_config.feature_scaler_path
     target_scaler_path = data_transformation_obj.transformation_config.target_scaler_path
-    
-    assert os.path.exists(feature_scaler_path), f"Pickle file '{feature_scaler_path}' is not present"
-    assert os.path.exists(target_scaler_path), f"Pickle file '{target_scaler_path}' is not present"
+
+    assert os.path.exists(feature_scaler_path), f"Pickle file '{feature_scaler_path}' do not exist"
+    assert os.path.exists(target_scaler_path), f"Pickle file '{target_scaler_path}' do not exist"
 
     os.remove(feature_scaler_path)
     os.remove(target_scaler_path)
