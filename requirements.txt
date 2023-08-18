@@ -5,7 +5,7 @@ matplotlib
 openpyxl
 seaborn
 optuna
-dvc==2.1.0
+dvc==2.58.2
 mlflow
 pylint
 pre-commit
