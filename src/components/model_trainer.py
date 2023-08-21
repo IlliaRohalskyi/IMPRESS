@@ -20,7 +20,6 @@ import os
 import subprocess
 import sys
 from dataclasses import dataclass
-from typing import List
 
 import matplotlib.pyplot as plt
 import mlflow
@@ -34,6 +33,7 @@ from xgboost import XGBRegressor
 from src.exception import CustomException
 from src.logger import logging
 from src.utils import get_project_root, load_pickle
+from src.components.data_transformation import TrainTestData
 
 
 @dataclass
@@ -59,19 +59,6 @@ class ModelTrainerPaths:
     )
 
     explainability_path = os.path.join(get_project_root(), "artifacts/explainability")
-
-
-@dataclass
-class TrainTestData:
-    """
-    Container for training and testing data along with feature names.
-    """
-
-    x_train: np.ndarray
-    y_train: np.ndarray
-    x_test: np.ndarray
-    y_test: np.ndarray
-    feature_names: List[str]
 
 
 class ModelTrainer:

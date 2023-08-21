@@ -125,15 +125,13 @@ def test_data_transformation(_, data_transformation_obj):
     offline_train = pd.DataFrame(random_offline_data)
 
     online_pred = pd.DataFrame(random_online_data)
-    (
-        x_train,
-        y_train,
-        x_test,
-        y_test,
-        _,
-    ) = data_transformation_obj.initiate_data_transformation(
+    train_test_data_obj = data_transformation_obj.initiate_data_transformation(
         online_train, offline_train
     )
+    x_train = train_test_data_obj.x_train
+    x_test = train_test_data_obj.x_test
+    y_train = train_test_data_obj.y_train
+    y_test = train_test_data_obj.y_test
 
     x_pred = data_transformation_obj.initiate_data_transformation(online_pred, None)
 

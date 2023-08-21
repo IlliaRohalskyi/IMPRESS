@@ -6,6 +6,7 @@ This module provides a class with a method for data transformation tasks
 import os
 import sys
 from dataclasses import dataclass
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -15,6 +16,19 @@ from sklearn.preprocessing import MinMaxScaler
 from src.exception import CustomException
 from src.logger import logging
 from src.utils import get_project_root, load_pickle, save_pickle
+
+
+@dataclass
+class TrainTestData:
+    """
+    Container for training and testing data along with feature names.
+    """
+
+    x_train: np.ndarray
+    y_train: np.ndarray
+    x_test: np.ndarray
+    y_test: np.ndarray
+    feature_names: List[str]
 
 
 @dataclass
@@ -74,8 +88,7 @@ class DataTransformation:
 
         Returns:
             if offline_data is not None:
-                train-test np.arrays that are used for training
-                feature names for training
+                TrainTestData class instance with data ready for training
 
             else:
                 np.array of features ready for prediction
@@ -144,11 +157,11 @@ class DataTransformation:
                 )
 
                 return (
-                    x_train_scaled,
-                    y_train_scaled,
-                    x_test_scaled,
-                    y_test_scaled,
-                    merged_data_final.columns[:-3],
+                    TrainTestData(
+                        x_train_scaled, y_train_scaled,
+                        x_test_scaled, y_test_scaled,
+                        merged_data_final.columns[:-3]
+                    )
                 )
 
             feature_scaler = load_pickle(self.transformation_config.feature_scaler_path)
