@@ -30,10 +30,10 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import KFold
 from xgboost import XGBRegressor
 
+from src.components.data_transformation import TrainTestData
 from src.exception import CustomException
 from src.logger import logging
 from src.utils import get_project_root, load_pickle
-from src.components.data_transformation import TrainTestData
 
 
 @dataclass
@@ -394,3 +394,6 @@ class ModelTrainer:
                 f"Training and logging best model failed with error: {error_message}"
             )
             raise CustomException(error_message, sys) from error_message
+
+
+#
