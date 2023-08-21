@@ -394,6 +394,3 @@ class ModelTrainer:
                 f"Training and logging best model failed with error: {error_message}"
             )
             raise CustomException(error_message, sys) from error_message
-
-
-#
