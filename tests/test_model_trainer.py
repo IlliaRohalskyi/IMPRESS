@@ -72,7 +72,9 @@ def fixture_model_trainer(mock_data):
     Returns:
         ModelTrainer: A ModelTrainer instance with mock data.
     """
-    return ModelTrainer(mock_data)
+    with patch("load_pickle"):
+        model_trainer_obj = ModelTrainer(mock_data)
+    return model_trainer_obj
 
 
 def test_feature_importance_plot(model_trainer, mock_savefig):  # pylint: disable=W0613
@@ -168,8 +170,6 @@ def test_initiate_model_training(model_trainer, mock_savefig):  # pylint: disabl
         ), patch(
             "mlflow.end_run"
         ), patch(
-            "src.components.model_trainer.load_pickle"
-        ), patch(
             "sklearn.preprocessing.StandardScaler.inverse_transform",
             side_effect=lambda x: x,
         ), patch(
@@ -204,8 +204,6 @@ def test_retrain_model(model_trainer):
         "mlflow.log_param"
     ), patch(
         "mlflow.log_artifact"
-    ), patch(
-        "src.components.model_trainer.load_pickle"
     ), patch(
         "sklearn.preprocessing.StandardScaler.inverse_transform",
         side_effect=lambda x: x,
