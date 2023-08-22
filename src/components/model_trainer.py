@@ -201,6 +201,8 @@ class ModelTrainer:
                 min_child_weight=trial.suggest_int("min_child_weight", 1, 20),
                 reg_alpha=trial.suggest_float("reg_alpha", 0, 1),
                 reg_lambda=trial.suggest_float("reg_lambda", 0, 1),
+                tree_method="gpu_hist",
+                objective="reg:squarederror",
             )
         elif model_name == "rf":
             model = RandomForestRegressor(
@@ -210,6 +212,7 @@ class ModelTrainer:
                 min_samples_leaf=trial.suggest_int("min_samples_leaf", 1, 15),
                 max_features=trial.suggest_float("max_features", 0.1, 1),
                 bootstrap=trial.suggest_categorical("bootstrap", [True, False]),
+                criterion="absolute_error",
             )
 
         mae_list = []
