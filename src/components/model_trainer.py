@@ -74,10 +74,80 @@ class ModelTrainer:
             train_test_data (TrainTestData): Data for training and testing.
         """
         self.data = train_test_data
-        self.target_scaler = None
         self.current_model_name = None
         self.git_hash = self._get_git_hash()
         self.trainer_paths = ModelTrainerPaths()
+        self.target_scaler = load_pickle(self.trainer_paths.target_scaler_path)
+
+    def retrain_model(self, model_name, params):
+        """
+        Retrain the model given a model name and parameters. Logs metrics
+        and registers model into MLFlow
+
+        Args:
+            model_name (str): Name of the model
+            params (dict): Parameters to be passed to the model
+        """
+        mlflow.set_tracking_uri("https://dagshub.com/IlliaRohalskyi/IMPRESS.mlflow")
+
+        with mlflow.start_run():
+            model = self.train_model(model_name, params)
+
+            if model_name == "xgb":
+                mlflow.xgboost.log_model(
+                    xgb_model=model,
+                    artifact_path=f"models/{model_name}",
+                    registered_model_name=model_name,
+                )
+
+            elif model_name == "rf":
+                mlflow.sklearn.log_model(
+                    sk_model=model,
+                    artifact_path=f"models/{model_name}",
+                    registered_model_name=model_name,
+                )
+            else:
+                raise ValueError(f"Unsupported model name: {model_name}")
+
+            preds = model.predict(self.data.x_test)
+
+            mae = self.target_scaler.inverse_transform(
+                mean_absolute_error(
+                    self.data.y_test, preds, multioutput="raw_values"
+                ).reshape(1, -1)
+            ).flatten()
+
+            mlflow.log_metric(f"{model_name}_mae_oberflaechenspannung", mae[0])
+            mlflow.log_metric(f"{model_name}_mae_anionischetenside", mae[1])
+            mlflow.log_metric(f"{model_name}_mae_nichtionischentenside", mae[2])
+            mlflow.log_metric(f"{model_name}_mae_total", np.mean(mae))
+
+            if self.data.feature_names is not None:
+                self.feature_importance_plot(model, model_name)
+
+            mlflow.log_artifacts(
+                self.trainer_paths.explainability_path,
+                artifact_path="explainability",
+            )
+            mlflow.log_param("git_hash", self.git_hash)
+
+            mlflow.log_artifact(
+                self.trainer_paths.feature_scaler_path, artifact_path="scalers"
+            )
+
+            mlflow.log_artifact(
+                self.trainer_paths.target_scaler_path, artifact_path="scalers"
+            )
+
+            mlflow.log_artifact(
+                self.trainer_paths.data_ingestion_script_path,
+                artifact_path="components",
+            )
+
+            mlflow.log_artifact(
+                self.trainer_paths.data_transformation_script_path,
+                artifact_path="components",
+            )
 
     def train_model(self, model_name, best_params):
         """
@@ -199,8 +269,6 @@ class ModelTrainer:
         """
         try:
             logging.info("Starting model training")
-
-            self.target_scaler = load_pickle(self.trainer_paths.target_scaler_path)
 
             models = ["xgb", "rf"]
 

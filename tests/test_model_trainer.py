@@ -176,3 +176,41 @@ def test_initiate_model_training(model_trainer, mock_savefig):  # pylint: disabl
             model_trainer.initiate_model_training()
 
         mock_train_model.assert_called()
+
+
+def test_retrain_model(model_trainer):
+    """
+    Test the retrain_model method.
+
+    Args:
+        model_trainer (ModelTrainer): A ModelTrainer instance.
+    """
+    mock_best_params = {"n_estimators": 100, "max_depth": 10}
+    mock_model_name = "rf"
+    mock_predictions = np.random.rand(
+        len(model_trainer.data.x_test), len(model_trainer.data.y_test[0])
+    )
+    mock_model = Mock()
+    mock_model.predict.return_value = mock_predictions
+    model_trainer.train_model = Mock(return_value=mock_model)
+
+    with patch("mlflow.set_tracking_uri"), patch("mlflow.start_run"), patch(
+        "mlflow.xgboost.log_model"
+    ), patch("mlflow.sklearn.log_model"), patch("mlflow.log_metric"), patch(
+        "mlflow.log_artifacts"
+    ), patch(
+        "mlflow.log_param"
+    ), patch(
+        "mlflow.log_artifact"
+    ), patch(
+        "src.components.model_trainer.load_pickle"
+    ), patch(
+        "sklearn.preprocessing.StandardScaler.inverse_transform",
+        side_effect=lambda x: x,
+    ), patch(
+        "src.components.model_trainer.ModelTrainer.feature_importance_plot"
+    ):
+        model_trainer.retrain_model(mock_model_name, mock_best_params)
+
+    model_trainer.train_model.assert_called_once_with(mock_model_name, mock_best_params)
+    mock_model.predict.assert_called_once_with(model_trainer.data.x_test)
