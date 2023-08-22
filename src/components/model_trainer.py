@@ -202,7 +202,7 @@ class ModelTrainer:
                 reg_alpha=trial.suggest_float("reg_alpha", 0, 1),
                 reg_lambda=trial.suggest_float("reg_lambda", 0, 1),
                 tree_method="gpu_hist",
-                objective="reg:squarederror",
+                objective="reg:absoluteerror",
             )
         elif model_name == "rf":
             model = RandomForestRegressor(
