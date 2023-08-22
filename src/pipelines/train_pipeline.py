@@ -56,8 +56,8 @@ def model_training(result):
     ModelTrainer(train_test_data_obj).initiate_model_training()
 
 
-@flow
-def main_flow():
+@flow(name="train_pipeline")
+def train_pipeline():
     """
     Prefect flow that orchestrates the execution of data ingestion, transformation,
     and model training tasks.
@@ -68,4 +68,4 @@ def main_flow():
 
 
 if __name__ == "__main__":
-    main_flow()
+    train_pipeline()

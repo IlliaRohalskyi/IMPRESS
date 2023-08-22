@@ -94,8 +94,8 @@ def model_training(result):
     )
 
 
-@flow
-def main_flow():
+@flow(name="retrain_pipeline")
+def retrain_pipeline():
     """
     Prefect flow that orchestrates the execution of data ingestion, transformation,
     and model training tasks.
@@ -106,4 +106,4 @@ def main_flow():
 
 
 if __name__ == "__main__":
-    main_flow()
+    retrain_pipeline()
