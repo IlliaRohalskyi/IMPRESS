@@ -72,7 +72,7 @@ def fixture_model_trainer(mock_data):
     Returns:
         ModelTrainer: A ModelTrainer instance with mock data.
     """
-    with patch("load_pickle"):
+    with patch("src.components.model_trainer.load_pickle"):
         model_trainer_obj = ModelTrainer(mock_data)
     return model_trainer_obj
 
