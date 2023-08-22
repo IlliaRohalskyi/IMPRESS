@@ -4,4 +4,11 @@ lint:
 test:
 	pytest tests
 
-.PHONY: lint test
+format:
+	@echo "Running isort..."
+	@isort .
+	@echo "Running black..."
+	@black .
+	@echo "Formatting complete!"
+
+.PHONY: lint test format

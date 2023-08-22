@@ -149,6 +149,16 @@ class DataTransformation:
                 x_test_scaled = np.array(feature_scaler.transform(x_test))
                 y_test_scaled = np.array(target_scaler.transform(y_test))
 
+                os.makedirs(
+                    os.path.dirname(self.transformation_config.feature_scaler_path),
+                    exist_ok=True,
+                )
+
+                os.makedirs(
+                    os.path.dirname(self.transformation_config.target_scaler_path),
+                    exist_ok=True,
+                )
+
                 save_pickle(
                     feature_scaler, self.transformation_config.feature_scaler_path
                 )
@@ -156,12 +166,12 @@ class DataTransformation:
                     target_scaler, self.transformation_config.target_scaler_path
                 )
 
-                return (
-                    TrainTestData(
-                        x_train_scaled, y_train_scaled,
-                        x_test_scaled, y_test_scaled,
-                        merged_data_final.columns[:-3]
-                    )
+                return TrainTestData(
+                    x_train=x_train_scaled,
+                    y_train=y_train_scaled,
+                    x_test=x_test_scaled,
+                    y_test=y_test_scaled,
+                    feature_names=merged_data_final.columns[:-3],
                 )
 
             feature_scaler = load_pickle(self.transformation_config.feature_scaler_path)
