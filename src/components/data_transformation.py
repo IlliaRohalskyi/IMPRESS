@@ -251,14 +251,14 @@ class DataTransformation:
                         y_train=washing_y_train_scaled,
                         x_test=washing_x_test_scaled,
                         y_test=washing_y_test_scaled,
-                        feature_names=merged_data_final.columns[:-3],
+                        feature_names=merged_data_final.columns[1:-3],
                     ),
                     TrainTestData(
                         x_train=rinsing_x_train_scaled,
                         y_train=rinsing_y_train_scaled,
                         x_test=rinsing_x_test_scaled,
                         y_test=rinsing_y_test_scaled,
-                        feature_names=merged_data_final.columns[:-3],
+                        feature_names=merged_data_final.columns[1:-3],
                     ),
                 )
 
