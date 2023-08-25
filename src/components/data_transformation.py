@@ -47,11 +47,17 @@ class DataTransformationConfig:
         print(config.scaler_path)
     """
 
-    feature_scaler_path: str = os.path.join(
-        get_project_root(), "artifacts/data_processing/feature_scaler.pkl"
+    washing_feature_scaler_path: str = os.path.join(
+        get_project_root(), "artifacts/data_processing/washing_feature_scaler.pkl"
     )
-    target_scaler_path: str = os.path.join(
-        get_project_root(), "artifacts/data_processing/target_scaler.pkl"
+    washing_target_scaler_path: str = os.path.join(
+        get_project_root(), "artifacts/data_processing/washing_target_scaler.pkl"
+    )
+    rinsing_feature_scaler_path: str = os.path.join(
+        get_project_root(), "artifacts/data_processing/rinsing_feature_scaler.pkl"
+    )
+    rinsing_target_scaler_path: str = os.path.join(
+        get_project_root(), "artifacts/data_processing/rinsing_target_scaler.pkl"
     )
 
 
@@ -127,10 +133,10 @@ class DataTransformation:
                 )
 
                 washing_df = merged_data_final[merged_data_final["waschen"] == 1].drop(
-                    column=["waschen"]
+                    columns=["waschen"]
                 )
                 rinsing_df = merged_data_final[merged_data_final["waschen"] == 0].drop(
-                    column=["waschen"]
+                    columns=["waschen"]
                 )
 
                 waschen_train_data, waschen_test_data = train_test_split(
