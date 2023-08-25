@@ -139,57 +139,57 @@ class DataTransformation:
                     columns=["waschen"]
                 )
 
-                waschen_train_data, waschen_test_data = train_test_split(
+                washing_train_data, washing_test_data = train_test_split(
                     washing_df,
                     shuffle=True,
                     test_size=0.2,
                     random_state=42,
                 )
 
-                waschen_x_train = waschen_train_data.iloc[:, :-3]
-                waschen_y_train = waschen_train_data.iloc[:, -3:]
+                washing_x_train = washing_train_data.iloc[:, :-3]
+                washing_y_train = washing_train_data.iloc[:, -3:]
 
-                waschen_x_test = waschen_test_data.iloc[:, :-3]
-                waschen_y_test = waschen_test_data.iloc[:, -3:]
+                washing_x_test = washing_test_data.iloc[:, :-3]
+                washing_y_test = washing_test_data.iloc[:, -3:]
 
-                waschen_feature_scaler = MinMaxScaler()
-                waschen_target_scaler = MinMaxScaler()
+                washing_feature_scaler = MinMaxScaler()
+                washing_target_scaler = MinMaxScaler()
 
-                waschen_x_train_scaled = waschen_feature_scaler.fit_transform(
-                    waschen_x_train
+                washing_x_train_scaled = washing_feature_scaler.fit_transform(
+                    washing_x_train
                 )
-                waschen_y_train_scaled = waschen_target_scaler.fit_transform(
-                    waschen_y_train
+                washing_y_train_scaled = washing_target_scaler.fit_transform(
+                    washing_y_train
                 )
 
-                waschen_x_test_scaled = np.array(
-                    waschen_feature_scaler.transform(waschen_x_test)
+                washing_x_test_scaled = np.array(
+                    washing_feature_scaler.transform(washing_x_test)
                 )
-                waschen_y_test_scaled = np.array(
-                    waschen_target_scaler.transform(waschen_y_test)
+                washing_y_test_scaled = np.array(
+                    washing_target_scaler.transform(washing_y_test)
                 )
 
                 os.makedirs(
                     os.path.dirname(
-                        self.transformation_config.waschen_feature_scaler_path
+                        self.transformation_config.washing_feature_scaler_path
                     ),
                     exist_ok=True,
                 )
 
                 os.makedirs(
                     os.path.dirname(
-                        self.transformation_config.waschen_target_scaler_path
+                        self.transformation_config.washing_target_scaler_path
                     ),
                     exist_ok=True,
                 )
 
                 save_pickle(
-                    waschen_feature_scaler,
-                    self.transformation_config.waschen_feature_scaler_path,
+                    washing_feature_scaler,
+                    self.transformation_config.washing_feature_scaler_path,
                 )
                 save_pickle(
-                    waschen_target_scaler,
-                    self.transformation_config.waschen_target_scaler_path,
+                    washing_target_scaler,
+                    self.transformation_config.washing_target_scaler_path,
                 )
 
                 rinsing_train_data, rinsing_test_data = train_test_split(
