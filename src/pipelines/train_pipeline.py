@@ -38,10 +38,10 @@ def data_transformation(result):
     online_data = result["online_data"]
     offline_data = result["offline_data"]
 
-    train_test_data = DataTransformation().initiate_data_transformation(
+    washing, rinsing = DataTransformation().initiate_data_transformation(
         online_data, offline_data
     )
-    return {"train_test_data": train_test_data}
+    return {"washing": washing, "rinsing": rinsing}
 
 
 @task
@@ -52,8 +52,10 @@ def model_training(result):
     Args:
         result (dict): Dictionary containing transformed train-test data.
     """
-    train_test_data_obj = result["train_test_data"]
-    ModelTrainer(train_test_data_obj).initiate_model_training()
+    washing = result["washing"]
+    rinsing = result["rinsing"]
+    ModelTrainer(washing).initiate_model_training()
+    ModelTrainer(rinsing).initiate_model_training()
 
 
 @flow(name="train_pipeline")
