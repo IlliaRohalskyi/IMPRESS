@@ -4,12 +4,14 @@ Prefect Flow for End-to-End Training Pipeline
 This script defines a Prefect flow that orchestrates the execution of data ingestion, 
 transformation, and model training tasks
 """
+import os
 
 from prefect import flow, task
 
 from src.components.data_ingestion import DataIngestion
 from src.components.data_transformation import DataTransformation
 from src.components.model_trainer import ModelTrainer
+from src.utils import get_project_root
 
 
 @task
@@ -54,8 +56,26 @@ def model_training(result):
     """
     washing = result["washing"]
     rinsing = result["rinsing"]
-    ModelTrainer(washing).initiate_model_training()
-    ModelTrainer(rinsing).initiate_model_training()
+
+    washing_trainer = ModelTrainer(washing)
+    rinsing_trainer = ModelTrainer(rinsing)
+
+    washing_trainer.trainer_paths.feature_scaler_path = os.path.join(
+        get_project_root(), "artifacts/data_processing/washing_feature_scaler.pkl"
+    )
+    washing_trainer.trainer_paths.target_scaler_path = os.path.join(
+        get_project_root(), "artifacts/data_processing/washing_feature_scaler.pkl"
+    )
+
+    rinsing_trainer.trainer_paths.feature_scaler_path = os.path.join(
+        get_project_root(), "artifacts/data_processing/rinsing_feature_scaler.pkl"
+    )
+    rinsing_trainer.trainer_paths.target_scaler_path = os.path.join(
+        get_project_root(), "artifacts/data_processing/rinsing_feature_scaler.pkl"
+    )
+
+    washing_trainer.initiate_model_training()
+    rinsing_trainer.initiate_model_training()
 
 
 @flow(name="train_pipeline")

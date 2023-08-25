@@ -50,12 +50,20 @@ class ModelTrainerPaths:
         get_project_root(), "src/components/data_transformation.py"
     )
 
-    feature_scaler_path = os.path.join(
-        get_project_root(), "artifacts/data_processing/feature_scaler.pkl"
+    waschen_feature_scaler_path = os.path.join(
+        get_project_root(), "artifacts/data_processing/waschen_feature_scaler.pkl"
     )
 
-    target_scaler_path = os.path.join(
-        get_project_root(), "artifacts/data_processing/target_scaler.pkl"
+    waschen_target_scaler_path = os.path.join(
+        get_project_root(), "artifacts/data_processing/waschen_target_scaler.pkl"
+    )
+
+    rinsing_feature_scaler_path = os.path.join(
+        get_project_root(), "artifacts/data_processing/rinsing_feature_scaler.pkl"
+    )
+
+    rinsing_target_scaler_path = os.path.join(
+        get_project_root(), "artifacts/data_processing/rinsing_target_scaler.pkl"
     )
 
     explainability_path = os.path.join(get_project_root(), "artifacts/explainability")
