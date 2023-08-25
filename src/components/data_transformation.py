@@ -247,10 +247,10 @@ class DataTransformation:
 
                 return (
                     TrainTestData(
-                        x_train=waschen_x_train_scaled,
-                        y_train=waschen_y_train_scaled,
-                        x_test=waschen_x_test_scaled,
-                        y_test=waschen_y_test_scaled,
+                        x_train=washing_x_train_scaled,
+                        y_train=washing_y_train_scaled,
+                        x_test=washing_x_test_scaled,
+                        y_test=washing_y_test_scaled,
                         feature_names=merged_data_final.columns[:-3],
                     ),
                     TrainTestData(
