@@ -181,7 +181,7 @@ def test_initiate_model_training(model_trainer, mock_savefig):  # pylint: disabl
         ), patch(
             "sklearn.preprocessing.StandardScaler.inverse_transform",
             return_value=mock_target_scaler.inverse_transform(mock_predictions),
-        ) as mock_inverse_transform, patch(
+        ), patch(
             "src.components.model_trainer.ModelTrainer.feature_importance_plot"
         ):
             model_trainer.initiate_model_training()
