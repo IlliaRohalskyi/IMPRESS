@@ -47,11 +47,17 @@ class DataTransformationConfig:
         print(config.scaler_path)
     """
 
-    feature_scaler_path: str = os.path.join(
-        get_project_root(), "artifacts/data_processing/feature_scaler.pkl"
+    washing_feature_scaler_path: str = os.path.join(
+        get_project_root(), "artifacts/data_processing/washing_feature_scaler.pkl"
     )
-    target_scaler_path: str = os.path.join(
-        get_project_root(), "artifacts/data_processing/target_scaler.pkl"
+    washing_target_scaler_path: str = os.path.join(
+        get_project_root(), "artifacts/data_processing/washing_target_scaler.pkl"
+    )
+    rinsing_feature_scaler_path: str = os.path.join(
+        get_project_root(), "artifacts/data_processing/rinsing_feature_scaler.pkl"
+    )
+    rinsing_target_scaler_path: str = os.path.join(
+        get_project_root(), "artifacts/data_processing/rinsing_target_scaler.pkl"
     )
 
 
@@ -126,52 +132,134 @@ class DataTransformation:
                     columns=["experimentnummer"]
                 )
 
-                train_data, test_data = train_test_split(
-                    merged_data_final,
+                washing_df = merged_data_final[merged_data_final["waschen"] == 1].drop(
+                    columns=["waschen"]
+                )
+                rinsing_df = merged_data_final[merged_data_final["waschen"] == 0].drop(
+                    columns=["waschen"]
+                )
+
+                washing_train_data, washing_test_data = train_test_split(
+                    washing_df,
                     shuffle=True,
-                    stratify=merged_data_final.waschen,
                     test_size=0.2,
                     random_state=42,
                 )
 
-                x_train = train_data.iloc[:, :-3]
-                y_train = train_data.iloc[:, -3:]
+                washing_x_train = washing_train_data.iloc[:, :-3]
+                washing_y_train = washing_train_data.iloc[:, -3:]
 
-                x_test = test_data.iloc[:, :-3]
-                y_test = test_data.iloc[:, -3:]
+                washing_x_test = washing_test_data.iloc[:, :-3]
+                washing_y_test = washing_test_data.iloc[:, -3:]
 
-                feature_scaler = MinMaxScaler()
-                target_scaler = MinMaxScaler()
+                washing_feature_scaler = MinMaxScaler()
+                washing_target_scaler = MinMaxScaler()
 
-                x_train_scaled = feature_scaler.fit_transform(x_train)
-                y_train_scaled = target_scaler.fit_transform(y_train)
+                washing_x_train_scaled = washing_feature_scaler.fit_transform(
+                    washing_x_train
+                )
+                washing_y_train_scaled = washing_target_scaler.fit_transform(
+                    washing_y_train
+                )
 
-                x_test_scaled = np.array(feature_scaler.transform(x_test))
-                y_test_scaled = np.array(target_scaler.transform(y_test))
+                washing_x_test_scaled = np.array(
+                    washing_feature_scaler.transform(washing_x_test)
+                )
+                washing_y_test_scaled = np.array(
+                    washing_target_scaler.transform(washing_y_test)
+                )
 
                 os.makedirs(
-                    os.path.dirname(self.transformation_config.feature_scaler_path),
+                    os.path.dirname(
+                        self.transformation_config.washing_feature_scaler_path
+                    ),
                     exist_ok=True,
                 )
 
                 os.makedirs(
-                    os.path.dirname(self.transformation_config.target_scaler_path),
+                    os.path.dirname(
+                        self.transformation_config.washing_target_scaler_path
+                    ),
                     exist_ok=True,
                 )
 
                 save_pickle(
-                    feature_scaler, self.transformation_config.feature_scaler_path
+                    washing_feature_scaler,
+                    self.transformation_config.washing_feature_scaler_path,
                 )
                 save_pickle(
-                    target_scaler, self.transformation_config.target_scaler_path
+                    washing_target_scaler,
+                    self.transformation_config.washing_target_scaler_path,
                 )
 
-                return TrainTestData(
-                    x_train=x_train_scaled,
-                    y_train=y_train_scaled,
-                    x_test=x_test_scaled,
-                    y_test=y_test_scaled,
-                    feature_names=merged_data_final.columns[:-3],
+                rinsing_train_data, rinsing_test_data = train_test_split(
+                    rinsing_df,
+                    shuffle=True,
+                    test_size=0.2,
+                    random_state=42,
+                )
+
+                rinsing_x_train = rinsing_train_data.iloc[:, :-3]
+                rinsing_y_train = rinsing_train_data.iloc[:, -3:]
+
+                rinsing_x_test = rinsing_test_data.iloc[:, :-3]
+                rinsing_y_test = rinsing_test_data.iloc[:, -3:]
+
+                rinsing_feature_scaler = MinMaxScaler()
+                rinsing_target_scaler = MinMaxScaler()
+
+                rinsing_x_train_scaled = rinsing_feature_scaler.fit_transform(
+                    rinsing_x_train
+                )
+                rinsing_y_train_scaled = rinsing_target_scaler.fit_transform(
+                    rinsing_y_train
+                )
+
+                rinsing_x_test_scaled = np.array(
+                    rinsing_feature_scaler.transform(rinsing_x_test)
+                )
+                rinsing_y_test_scaled = np.array(
+                    rinsing_target_scaler.transform(rinsing_y_test)
+                )
+
+                os.makedirs(
+                    os.path.dirname(
+                        self.transformation_config.rinsing_feature_scaler_path
+                    ),
+                    exist_ok=True,
+                )
+
+                os.makedirs(
+                    os.path.dirname(
+                        self.transformation_config.rinsing_target_scaler_path
+                    ),
+                    exist_ok=True,
+                )
+
+                save_pickle(
+                    rinsing_feature_scaler,
+                    self.transformation_config.rinsing_feature_scaler_path,
+                )
+                save_pickle(
+                    rinsing_target_scaler,
+                    self.transformation_config.rinsing_target_scaler_path,
+                )
+
+                return (
+                    TrainTestData(
+                        x_train=washing_x_train_scaled,
+                        y_train=washing_y_train_scaled,
+                        x_test=washing_x_test_scaled,
+                        y_test=washing_y_test_scaled,
+                        feature_names=merged_data_final.columns[1:-3],
+                    ),
+                    TrainTestData(
+                        x_train=rinsing_x_train_scaled,
+                        y_train=rinsing_y_train_scaled,
+                        x_test=rinsing_x_test_scaled,
+                        y_test=rinsing_y_test_scaled,
+                        feature_names=merged_data_final.columns[1:-3],
+                    ),
                 )
 
             feature_scaler = load_pickle(self.transformation_config.feature_scaler_path)
