@@ -4,14 +4,12 @@ Prefect Flow for End-to-End Training Pipeline
 This script defines a Prefect flow that orchestrates the execution of data ingestion, 
 transformation, and model training tasks
 """
-import os
 
 from prefect import flow, task
 
 from src.components.data_ingestion import DataIngestion
 from src.components.data_transformation import DataTransformation
 from src.components.model_trainer import ModelTrainer
-from src.utils import get_project_root
 
 
 @task
@@ -40,10 +38,10 @@ def data_transformation(result):
     online_data = result["online_data"]
     offline_data = result["offline_data"]
 
-    washing, rinsing = DataTransformation().initiate_data_transformation(
+    train_test_data = DataTransformation().initiate_data_transformation(
         online_data, offline_data
     )
-    return {"washing": washing, "rinsing": rinsing}
+    return {"train_test_data": train_test_data}
 
 
 @task
@@ -54,28 +52,8 @@ def model_training(result):
     Args:
         result (dict): Dictionary containing transformed train-test data.
     """
-    washing = result["washing"]
-    rinsing = result["rinsing"]
-
-    washing_trainer = ModelTrainer(washing)
-    rinsing_trainer = ModelTrainer(rinsing)
-
-    washing_trainer.trainer_paths.feature_scaler_path = os.path.join(
-        get_project_root(), "artifacts/data_processing/washing_feature_scaler.pkl"
-    )
-    washing_trainer.trainer_paths.target_scaler_path = os.path.join(
-        get_project_root(), "artifacts/data_processing/washing_feature_scaler.pkl"
-    )
-
-    rinsing_trainer.trainer_paths.feature_scaler_path = os.path.join(
-        get_project_root(), "artifacts/data_processing/rinsing_feature_scaler.pkl"
-    )
-    rinsing_trainer.trainer_paths.target_scaler_path = os.path.join(
-        get_project_root(), "artifacts/data_processing/rinsing_feature_scaler.pkl"
-    )
-
-    washing_trainer.initiate_model_training()
-    rinsing_trainer.initiate_model_training()
+    train_test_data_obj = result["train_test_data"]
+    ModelTrainer(train_test_data_obj).initiate_model_training()
 
 
 @flow(name="train_pipeline")

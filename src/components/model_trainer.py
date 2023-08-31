@@ -238,7 +238,9 @@ class ModelTrainer:
                     study.optimize(self.objective, n_trials=100, show_progress_bar=True)
 
                     mlflow.log_metric(f"{model_name}_val_total_mae", study.best_value)
-                    best_model, best_mae = self.train_and_log_model(model_name, study)
+                    best_model, best_mae = self.train_and_log_model(
+                        model_name, study=study
+                    )
 
                     best_models.append(best_model)
                     best_maes.append(best_mae)
