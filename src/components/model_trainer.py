@@ -79,76 +79,6 @@ class ModelTrainer:
         self.trainer_paths = ModelTrainerPaths()
         self.target_scaler = load_pickle(self.trainer_paths.target_scaler_path)
 
-    def retrain_model(self, model_name, params):
-        """
-        Retrain the model given a model name and parameters. Logs metrics
-        and registers model into MLFlow
-
-        Args:
-            model_name (str): Name of the model
-            params (dict): Parameters to be passed to the model
-        """
-        mlflow.set_tracking_uri("https://dagshub.com/IlliaRohalskyi/IMPRESS.mlflow")
-
-        with mlflow.start_run():
-            model = self.train_model(model_name, params)
-
-            if model_name == "xgb":
-                mlflow.xgboost.log_model(
-                    xgb_model=model,
-                    artifact_path=f"models/{model_name}",
-                    registered_model_name=model_name,
-                )
-
-            elif model_name == "rf":
-                mlflow.sklearn.log_model(
-                    sk_model=model,
-                    artifact_path=f"models/{model_name}",
-                    registered_model_name=model_name,
-                )
-            else:
-                raise ValueError(f"Unsupported model name: {model_name}")
-
-            preds = model.predict(self.data.x_test)
-
-            mae = self.target_scaler.inverse_transform(
-                mean_absolute_error(
-                    self.data.y_test, preds, multioutput="raw_values"
-                ).reshape(1, -1)
-            ).flatten()
-
-            mlflow.log_metric(f"{model_name}_mae_oberflaechenspannung", mae[0])
-            mlflow.log_metric(f"{model_name}_mae_anionischetenside", mae[1])
-            mlflow.log_metric(f"{model_name}_mae_nichtionischentenside", mae[2])
-            mlflow.log_metric(f"{model_name}_mae_total", np.mean(mae))
-
-            if self.data.feature_names is not None:
-                self.feature_importance_plot(model, model_name)
-
-            mlflow.log_artifacts(
-                self.trainer_paths.explainability_path,
-                artifact_path="explainability",
-            )
-            mlflow.log_param("git_hash", self.git_hash)
-
-            mlflow.log_artifact(
-                self.trainer_paths.feature_scaler_path, artifact_path="scalers"
-            )
-
-            mlflow.log_artifact(
-                self.trainer_paths.target_scaler_path, artifact_path="scalers"
-            )
-
-            mlflow.log_artifact(
-                self.trainer_paths.data_ingestion_script_path,
-                artifact_path="components",
-            )
-
-            mlflow.log_artifact(
-                self.trainer_paths.data_transformation_script_path,
-                artifact_path="components",
-            )
-
     def train_model(self, model_name, best_params):
         """
         Train a machine learning model.
@@ -190,32 +120,32 @@ class ModelTrainer:
         """
         model_name = self.current_model_name
 
-        if model_name == "xgb":
-            model = XGBRegressor(
-                n_estimators=trial.suggest_int("n_estimators", 5, 30000),
-                max_depth=trial.suggest_int("max_depth", 3, 30000),
-                learning_rate=trial.suggest_float("learning_rate", 0.001, 0.3),
-                subsample=trial.suggest_float("subsample", 0.1, 1.0),
-                colsample_bytree=trial.suggest_float("colsample_bytree", 0.1, 1.0),
-                gamma=trial.suggest_float("gamma", 0, 10),
-                min_child_weight=trial.suggest_int("min_child_weight", 1, 20),
-                reg_alpha=trial.suggest_float("reg_alpha", 0, 1),
-                reg_lambda=trial.suggest_float("reg_lambda", 0, 1),
-            )
-        elif model_name == "rf":
-            model = RandomForestRegressor(
-                n_estimators=trial.suggest_int("n_estimators", 5, 30000),
-                max_depth=trial.suggest_int("max_depth", 3, 30000),
-                min_samples_split=trial.suggest_int("min_samples_split", 2, 30),
-                min_samples_leaf=trial.suggest_int("min_samples_leaf", 1, 15),
-                max_features=trial.suggest_float("max_features", 0.1, 1),
-                bootstrap=trial.suggest_categorical("bootstrap", [True, False]),
-            )
-
         mae_list = []
         k_fold = KFold(n_splits=5, shuffle=True, random_state=42)
 
         for train_idx, val_idx in k_fold.split(self.data.x_train, self.data.y_train):
+            if model_name == "xgb":
+                model = XGBRegressor(
+                    n_estimators=trial.suggest_int("n_estimators", 5, 30000),
+                    max_depth=trial.suggest_int("max_depth", 3, 30000),
+                    learning_rate=trial.suggest_float("learning_rate", 0.001, 0.3),
+                    subsample=trial.suggest_float("subsample", 0.1, 1.0),
+                    colsample_bytree=trial.suggest_float("colsample_bytree", 0.1, 1.0),
+                    gamma=trial.suggest_float("gamma", 0, 10),
+                    min_child_weight=trial.suggest_int("min_child_weight", 1, 20),
+                    reg_alpha=trial.suggest_float("reg_alpha", 0, 1),
+                    reg_lambda=trial.suggest_float("reg_lambda", 0, 1),
+                )
+            elif model_name == "rf":
+                model = RandomForestRegressor(
+                    n_estimators=trial.suggest_int("n_estimators", 5, 30000),
+                    max_depth=trial.suggest_int("max_depth", 3, 30000),
+                    min_samples_split=trial.suggest_int("min_samples_split", 2, 30),
+                    min_samples_leaf=trial.suggest_int("min_samples_leaf", 1, 15),
+                    max_features=trial.suggest_float("max_features", 0.1, 1),
+                    bootstrap=trial.suggest_categorical("bootstrap", [True, False]),
+                )
+
             x_train_fold, x_val_fold = (
                 self.data.x_train[train_idx],
                 self.data.x_train[val_idx],
@@ -228,15 +158,16 @@ class ModelTrainer:
             model.fit(x_train_fold, y_train_fold)
             predictions = model.predict(x_val_fold)
 
-            mae = self.target_scaler.inverse_transform(
-                mean_absolute_error(
-                    y_val_fold, predictions, multioutput="raw_values"
-                ).reshape(1, -1)
+            y_val_scaled = self.target_scaler.inverse_transform(y_val_fold)
+            predictions_scaled = self.target_scaler.inverse_transform(predictions)
+
+            mae = mean_absolute_error(
+                y_val_scaled, predictions_scaled, multioutput="raw_values"
             )
 
-            average_scaled_mae = np.mean(mae)
+            target_average_mae = np.mean(mae)
 
-            mae_list.append(average_scaled_mae)
+            mae_list.append(target_average_mae)
 
         return np.mean(mae_list)
 
@@ -306,6 +237,7 @@ class ModelTrainer:
                     logging.info("Starting hyperparameter tuning")
                     study.optimize(self.objective, n_trials=100, show_progress_bar=True)
 
+                    mlflow.log_metric(f"{model_name}_val_total_mae", study.best_value)
                     best_model, best_mae = self.train_and_log_model(model_name, study)
 
                     best_models.append(best_model)
@@ -331,7 +263,7 @@ class ModelTrainer:
             feature_importances = model.feature_importances_
             n_features = len(feature_importances)
 
-            plt.figure(figsize=(10, 6))
+            plt.figure(figsize=(10, 12))
             plt.barh(range(n_features), feature_importances, align="center")
 
             plt.yticks(np.arange(n_features), self.data.feature_names)
@@ -378,16 +310,21 @@ class ModelTrainer:
                 predictions = model.predict(self.data.x_test)
                 ensemble_predictions += weight * predictions
 
-            ensemble_mae = self.target_scaler.inverse_transform(
-                mean_absolute_error(
-                    self.data.y_test, ensemble_predictions, multioutput="raw_values"
-                ).reshape(1, -1)
-            ).flatten()
+            y_test_scaled = self.target_scaler.inverse_transform(self.data.y_test)
+            predictions_scaled = self.target_scaler.inverse_transform(
+                ensemble_predictions
+            )
 
-            mlflow.log_metric("ensemble_mae_oberflaechenspannung", ensemble_mae[0])
-            mlflow.log_metric("ensemble_mae_anionischetenside", ensemble_mae[1])
-            mlflow.log_metric("ensemble_mae_nichtionischentenside", ensemble_mae[2])
-            mlflow.log_metric("ensemble_mae_total", np.mean(ensemble_mae))
+            ensemble_mae = mean_absolute_error(
+                y_test_scaled, predictions_scaled, multioutput="raw_values"
+            )
+
+            mlflow.log_metric("ensemble_test_mae_oberflaechenspannung", ensemble_mae[0])
+            mlflow.log_metric("ensemble_test_mae_anionischetenside", ensemble_mae[1])
+            mlflow.log_metric(
+                "ensemble_test_mae_nichtionischentenside", ensemble_mae[2]
+            )
+            mlflow.log_metric("ensemble_test_mae_total", np.mean(ensemble_mae))
 
         except Exception as error_message:
             logging.error(
@@ -395,28 +332,34 @@ class ModelTrainer:
             )
             raise CustomException(error_message, sys) from error_message
 
-    def train_and_log_model(self, model_name, study):
+    def train_and_log_model(self, model_name, study=None, custom_params=None):
         """
         Train a model, log metrics and artifacts to MLflow.
 
         Args:
             model_name (str): Name of the model.
-            study (optuna.Study): Optuna study object.
+            study (optuna.Study): Optuna study object. (Optional)
+            custom_params (dict): Custom model parameters. (Optional)
 
         Returns:
             tuple: Tuple containing the best trained model and its mean absolute error.
         """
         try:
-            logging.info("Training best model")
+            logging.info("Training model")
+
+            if study is not None:
+                params = study.best_params
+            elif custom_params is not None:
+                params = custom_params
+            else:
+                raise ValueError("Either study or custom_params must be provided.")
 
             params_with_prefix = {
-                f"{model_name}_{key}": value for key, value in study.best_params.items()
+                f"{model_name}_{key}": value for key, value in params.items()
             }
-
             mlflow.log_params(params_with_prefix)
-            mlflow.log_metric(f"{model_name}_val_total_mae", study.best_value)
 
-            best_model = self.train_model(model_name, study.best_params)
+            best_model = self.train_model(model_name, params)
 
             if model_name == "xgb":
                 mlflow.xgboost.log_model(
@@ -424,7 +367,6 @@ class ModelTrainer:
                     artifact_path=f"models/{model_name}",
                     registered_model_name=model_name,
                 )
-
             elif model_name == "rf":
                 mlflow.sklearn.log_model(
                     sk_model=best_model,
@@ -434,18 +376,19 @@ class ModelTrainer:
             else:
                 raise ValueError(f"Unsupported model name: {model_name}")
 
-            preds = best_model.predict(self.data.x_test)
+            predictions = best_model.predict(self.data.x_test)
 
-            mae = self.target_scaler.inverse_transform(
-                mean_absolute_error(
-                    self.data.y_test, preds, multioutput="raw_values"
-                ).reshape(1, -1)
-            ).flatten()
+            y_test_scaled = self.target_scaler.inverse_transform(self.data.y_test)
+            predictions_scaled = self.target_scaler.inverse_transform(predictions)
 
-            mlflow.log_metric(f"{model_name}_mae_oberflaechenspannung", mae[0])
-            mlflow.log_metric(f"{model_name}_mae_anionischetenside", mae[1])
-            mlflow.log_metric(f"{model_name}_mae_nichtionischentenside", mae[2])
-            mlflow.log_metric(f"{model_name}_mae_total", np.mean(mae))
+            mae = mean_absolute_error(
+                y_test_scaled, predictions_scaled, multioutput="raw_values"
+            )
+
+            mlflow.log_metric(f"{model_name}_test_mae_oberflaechenspannung", mae[0])
+            mlflow.log_metric(f"{model_name}_test_mae_anionischetenside", mae[1])
+            mlflow.log_metric(f"{model_name}_test_mae_nichtionischentenside", mae[2])
+            mlflow.log_metric(f"{model_name}_test_mae_total", np.mean(mae))
 
             if self.data.feature_names is not None:
                 self.feature_importance_plot(best_model, model_name)
@@ -455,7 +398,7 @@ class ModelTrainer:
                     artifact_path="explainability",
                 )
 
-            return (best_model, study.best_value)
+            return (best_model, study.best_value if study is not None else None)
 
         except Exception as error_message:
             logging.error(

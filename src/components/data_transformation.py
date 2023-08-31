@@ -221,7 +221,6 @@ class DataTransformation:
             "median",
             lambda x: x.quantile(0.25),
             lambda x: x.quantile(0.75),
-            lambda x: (x.iloc[-1] - x.iloc[0]) / len(x),
             lambda x: x.autocorr(lag=50) if len(x) > 51 else 0,
             lambda x: x.diff().std() if len(x) > 1 else 0,
         ]
@@ -236,8 +235,6 @@ class DataTransformation:
             else f"{col}_percentile25"
             if stat == "<lambda_1>"
             else f"{col}_percentile75"
-            if stat == "<lambda_2>"
-            else f"{col}_trend"
             if stat == "<lambda_3>"
             else f"{col}_autocorr"
             if stat == "<lambda_4>"
