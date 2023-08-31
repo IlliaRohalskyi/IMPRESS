@@ -72,7 +72,14 @@ def fixture_model_trainer(mock_data):
     Returns:
         ModelTrainer: A ModelTrainer instance with mock data.
     """
-    model_trainer_obj = ModelTrainer(mock_data)
+    with patch("src.components.model_trainer.load_pickle") as mock_scaler:
+        mock_scaler.return_value.inverse_transform.return_value = np.array(
+            [
+                [0.5, 0.6, 0.7],
+                [0.4, 0.3, 0.2],
+            ]
+        )
+        model_trainer_obj = ModelTrainer(mock_data)
     return model_trainer_obj
 
 
