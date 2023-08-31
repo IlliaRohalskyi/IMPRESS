@@ -90,7 +90,7 @@ def model_training(result):
     train_test_data_obj = result["train_test_data"]
     model_params = ModelParams()
     ModelTrainer(train_test_data_obj).train_and_log_model(
-        model_params.model_name, model_params.params
+        model_params.model_name, custom_params=model_params.params
     )
 
 
