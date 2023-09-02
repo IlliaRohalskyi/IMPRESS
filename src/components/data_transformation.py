@@ -202,18 +202,9 @@ class DataTransformation:
         online_df = online_data[online_data["vorschlagsnummer"] >= 0]
         online_df.drop_duplicates(inplace=True)
 
-        online_data_dropped = online_df.drop(
-            columns=[
-                "timestamp",
-                "spuelen",
-                "vorschlagsnummer",
-                "reserv1",
-                "reserv2",
-                "druck2",
-                "druck3",
-                "fluss2",
-            ]
-        )
+        online_data_dropped = online_df[
+            ["experimentnummer", "waschen", "truebung", "csbeq", "leitfaehigkeit"]
+        ]
 
         stat_functions = [
             "mean",
