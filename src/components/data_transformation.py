@@ -197,59 +197,72 @@ class DataTransformation:
         Returns:
             pd.DataFrame: The preprocessed online data.
         """
-        logging.info("Processing online data")
+        try:
+            logging.info("Processing online data")
 
-        online_df = online_data[online_data["vorschlagsnummer"] >= 0]
-        online_df.drop_duplicates(inplace=True)
+            online_df = online_data[online_data["vorschlagsnummer"] >= 0]
+            online_df.drop_duplicates(inplace=True)
 
-        online_data_dropped = online_df.drop(
-            columns=[
-                "timestamp",
-                "spuelen",
-                "vorschlagsnummer",
-                "reserv1",
-                "reserv2",
-                "druck2",
-                "druck3",
-                "fluss2",
-                "abs254",
-                "abs360",
-                "abs210",
-                "alkalinitaet",
-                "csbeq",
-                "bsbeq",
+            online_data_dropped = online_df.drop(
+                columns=[
+                    "timestamp",
+                    "spuelen",
+                    "vorschlagsnummer",
+                    "reserv1",
+                    "reserv2",
+                    "druck2",
+                    "druck3",
+                    "fluss2",
+                    "abs254",
+                    "abs360",
+                    "abs210",
+                    "alkalinitaet",
+                    "csbeq",
+                    "bsbeq",
+                ]
+            )
+
+            online_data_dropped.sort_values(
+                by=["experimentnummer", "waschen", "timestamp"],
+                ascending=[True, True, False],
+                inplace=True,
+            )
+
+            data_points_extracted_df = online_data_dropped.groupby(
+                ["experimentnummer", "waschen"]
+            ).head(400)
+
+            data_points_extracted_df.reset_index(drop=True, inplace=True)
+
+            stat_functions = [
+                "mean",
+                lambda x: 0 if len(x) == 1 else x.std(),
+                "median",
+                lambda x: x.quantile(0.25),
+                lambda x: x.quantile(0.75),
             ]
-        )
 
-        stat_functions = [
-            "mean",
-            lambda x: 0 if len(x) == 1 else x.std(),
-            "median",
-            lambda x: x.quantile(0.25),
-            lambda x: x.quantile(0.75),
-            lambda x: x.autocorr(lag=50) if len(x) > 51 else 0,
-            lambda x: x.diff().std() if len(x) > 1 else 0,
-        ]
+            online_data_final = data_points_extracted_df.groupby(
+                ["experimentnummer", "waschen"]
+            ).agg(stat_functions)
 
-        online_data_final = online_data_dropped.groupby(
-            ["experimentnummer", "waschen"]
-        ).agg(stat_functions)
+            online_data_final.columns = [
+                f"{col}_std"
+                if stat == "<lambda_0>"
+                else f"{col}_percentile25"
+                if stat == "<lambda_1>"
+                else f"{col}_percentile75"
+                if stat == "<lambda_2>"
+                else f"{col}_{stat}"
+                for col, stat in online_data_final.columns
+            ]
+        except Exception as error_message:
+            logging.error(
+                f"Online data preprocessing failed with error: {error_message}"
+            )
+            raise CustomException(error_message, sys) from error_message
 
-        online_data_final.columns = [
-            f"{col}_std"
-            if stat == "<lambda_0>"
-            else f"{col}_percentile25"
-            if stat == "<lambda_1>"
-            else f"{col}_percentile75"
-            if stat == "<lambda_2>"
-            else f"{col}_autocorr"
-            if stat == "<lambda_3>"
-            else f"{col}_diff_std"
-            if stat == "<lambda_4>"
-            else f"{col}_{stat}"
-            for col, stat in online_data_final.columns
-        ]
-        return online_data_final.reset_index()
+        return online_data_final
 
     def preprocess_offline_data(self, offline_data):
         """
@@ -263,21 +276,28 @@ class DataTransformation:
         Returns:
             pd.DataFrame: The preprocessed offline data.
         """
-        logging.info("Processing offline data")
+        try:
+            logging.info("Processing offline data")
 
-        offline_data.drop_duplicates(inplace=True)
-        offline_grouped = (
-            offline_data.groupby(["experimentnummer", "bemerkungen"])
-            .mean()
-            .reset_index()
-        )
+            offline_data.drop_duplicates(inplace=True)
+            offline_grouped = (
+                offline_data.groupby(["experimentnummer", "bemerkungen"])
+                .mean()
+                .reset_index()
+            )
 
-        offline_grouped["waschen"] = offline_grouped["bemerkungen"].map(
-            {"S1": 0, "W1": 1}
-        )
+            offline_grouped["waschen"] = offline_grouped["bemerkungen"].map(
+                {"S1": 0, "W1": 1}
+            )
 
-        offline_data_clean = offline_grouped[
-            offline_grouped["bemerkungen"].isin(["S1", "W1"])
-        ]
+            offline_data_clean = offline_grouped[
+                offline_grouped["bemerkungen"].isin(["S1", "W1"])
+            ]
+
+        except Exception as error_message:
+            logging.error(
+                f"Offline data preprocessing failed with error: {error_message}"
+            )
+            raise CustomException(error_message, sys) from error_message
 
         return offline_data_clean.drop(columns=["bemerkungen"])
