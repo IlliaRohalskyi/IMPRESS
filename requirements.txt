@@ -17,4 +17,5 @@ pyspellchecker
 pytest
 scikit-learn
 seaborn
+flask
 xgboost

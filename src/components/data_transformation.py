@@ -201,21 +201,10 @@ class DataTransformation:
             logging.info("Processing online data")
 
             online_df = online_data[online_data["vorschlagsnummer"] >= 0]
+
             online_df.drop_duplicates(inplace=True)
 
-            online_df.sort_values(
-                by=["experimentnummer", "waschen", "timestamp"],
-                ascending=[True, True, False],
-                inplace=True,
-            )
-
-            data_points_extracted_df = online_df.groupby(
-                ["experimentnummer", "waschen"]
-            ).head(400)
-
-            data_points_extracted_df.reset_index(drop=True, inplace=True)
-
-            online_data_dropped = data_points_extracted_df.drop(
+            online_data_dropped = online_df.drop(
                 columns=[
                     "timestamp",
                     "spuelen",
