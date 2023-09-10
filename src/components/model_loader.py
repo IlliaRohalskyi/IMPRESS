@@ -45,7 +45,7 @@ def load_and_save_models(
             latest_version = latest_versions[0]
             mlflow.artifacts.download_artifacts(
                 run_id=latest_version.run_id,
-                artifact_path="scalers/feature_scaler.pkl",
+                artifact_path="scalers/",
                 dst_path=os.path.join(models_path, f"{model_name}"),
             )
 

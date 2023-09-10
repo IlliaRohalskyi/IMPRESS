@@ -124,7 +124,11 @@ def test_data_transformation(_, data_transformation_obj):
     online_train = pd.DataFrame(random_online_data)
     offline_train = pd.DataFrame(random_offline_data)
 
-    online_pred = pd.DataFrame(random_online_data)
+    online_train["waschen"] = 0
+
+    pred_data = online_train.drop(columns=["experimentnummer"])
+    online_pred = pd.DataFrame(pred_data)
+
     train_test_data_obj = data_transformation_obj.initiate_data_transformation(
         online_train, offline_train
     )

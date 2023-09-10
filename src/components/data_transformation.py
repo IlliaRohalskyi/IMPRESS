@@ -175,11 +175,7 @@ class DataTransformation:
                 )
 
             feature_scaler = load_pickle(self.transformation_config.feature_scaler_path)
-            return np.array(
-                feature_scaler.transform(
-                    online_data_final.drop(columns=["experimentnummer"])
-                )
-            )
+            return np.array(feature_scaler.transform(online_data_final))
 
         except Exception as error_message:
             logging.error(f"Data transformation failed with error: {error_message}")
@@ -200,28 +196,26 @@ class DataTransformation:
         try:
             logging.info("Processing online data")
 
-            online_df = online_data[online_data["vorschlagsnummer"] >= 0]
+            if "vorschlagsnummer" in online_data.columns:
+                online_df = online_data[online_data["vorschlagsnummer"] >= 0]
 
-            online_df.drop_duplicates(inplace=True)
-
-            online_data_dropped = online_df.drop(
-                columns=[
-                    "timestamp",
-                    "spuelen",
-                    "vorschlagsnummer",
-                    "reserv1",
-                    "reserv2",
-                    "druck2",
-                    "druck3",
-                    "fluss2",
-                    "abs254",
-                    "abs360",
-                    "abs210",
-                    "alkalinitaet",
-                    "csbeq",
-                    "bsbeq",
+            if "experimentnummer" in online_data.columns:
+                online_data_dropped = online_df[
+                    [
+                        "experimentnummer",
+                        "waschen",
+                        "truebung",
+                        "druck1",
+                        "fluss1",
+                        "ph",
+                        "leitfaehigkeit",
+                    ]
                 ]
-            )
+
+            else:
+                online_data_dropped = online_df[
+                    ["waschen", "truebung", "druck1", "fluss1", "ph", "leitfaehigkeit"]
+                ]
 
             stat_functions = [
                 "mean",
@@ -231,9 +225,14 @@ class DataTransformation:
                 lambda x: x.quantile(0.75),
             ]
 
-            online_data_final = online_data_dropped.groupby(
-                ["experimentnummer", "waschen"]
-            ).agg(stat_functions)
+            if "experimentnummer" in online_data_dropped.columns:
+                online_data_final = online_data_dropped.groupby(
+                    ["experimentnummer", "waschen"]
+                ).agg(stat_functions)
+            else:
+                online_data_final = online_data_dropped.groupby(["waschen"]).agg(
+                    stat_functions
+                )
 
             online_data_final.columns = [
                 f"{col}_std"
@@ -245,13 +244,14 @@ class DataTransformation:
                 else f"{col}_{stat}"
                 for col, stat in online_data_final.columns
             ]
+
         except Exception as error_message:
             logging.error(
                 f"Online data preprocessing failed with error: {error_message}"
             )
             raise CustomException(error_message, sys) from error_message
 
-        return online_data_final
+        return online_data_final.reset_index()
 
     def preprocess_offline_data(self, offline_data):
         """
