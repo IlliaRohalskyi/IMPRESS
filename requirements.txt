@@ -1,19 +1,17 @@
 -e .
 black
-catboost
 dvc==2.58.2
+evidently
 isort
-lightgbm
 matplotlib
 mlflow
-numpy==1.19.0
+numpy==1.19.5
 openpyxl
 optuna
 pandas
 pre-commit
 prefect
 pylint
-pyspellchecker
 pytest
 scikit-learn
 seaborn

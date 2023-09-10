@@ -25,6 +25,10 @@ import matplotlib.pyplot as plt
 import mlflow
 import numpy as np
 import optuna
+import pandas as pd
+from evidently import ColumnMapping
+from evidently.metric_preset import RegressionPreset
+from evidently.report import Report
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import KFold
@@ -303,22 +307,34 @@ class ModelTrainer:
         try:
             logging.info("logging ensemble metrics")
 
-            ensemble_predictions = np.zeros_like(self.data.y_test)
+            test_ensemble_predictions = np.zeros_like(self.data.y_test)
+            train_ensemble_predictions = np.zeros_like(self.data.y_train)
             total_weight = sum(1 / mae for mae in best_maes)
             weights = [1 / mae / total_weight for mae in best_maes]
             mlflow.log_params({"weights": weights})
 
             for model, weight in zip(best_models, weights):
-                predictions = model.predict(self.data.x_test)
-                ensemble_predictions += weight * predictions
+                train_predictions = model.predict(self.data.x_train)
+                print(train_predictions.shape)
+                print(self.data.x_train.shape)
+                train_ensemble_predictions += weight * train_predictions
+                test_predictions = model.predict(self.data.x_test)
+                test_ensemble_predictions += weight * test_predictions
 
             y_test_scaled = self.target_scaler.inverse_transform(self.data.y_test)
-            predictions_scaled = self.target_scaler.inverse_transform(
-                ensemble_predictions
+            test_predictions_scaled = self.target_scaler.inverse_transform(
+                test_ensemble_predictions
+            )
+            train_predictions_scaled = self.target_scaler.inverse_transform(
+                train_ensemble_predictions
+            )
+
+            self.regression_report(
+                train_predictions_scaled, test_predictions_scaled, "ensemble"
             )
 
             ensemble_mae = mean_absolute_error(
-                y_test_scaled, predictions_scaled, multioutput="raw_values"
+                y_test_scaled, test_predictions_scaled, multioutput="raw_values"
             )
 
             mlflow.log_metric("ensemble_test_mae_oberflaechenspannung", ensemble_mae[0])
@@ -378,13 +394,24 @@ class ModelTrainer:
             else:
                 raise ValueError(f"Unsupported model name: {model_name}")
 
-            predictions = best_model.predict(self.data.x_test)
+            test_predictions = best_model.predict(self.data.x_test)
 
             y_test_scaled = self.target_scaler.inverse_transform(self.data.y_test)
-            predictions_scaled = self.target_scaler.inverse_transform(predictions)
+            test_predictions_scaled = self.target_scaler.inverse_transform(
+                test_predictions
+            )
+
+            train_predictions = best_model.predict(self.data.x_train)
+            train_predictions_scaled = self.target_scaler.inverse_transform(
+                train_predictions
+            )
+
+            self.regression_report(
+                train_predictions_scaled, test_predictions_scaled, model_name
+            )
 
             mae = mean_absolute_error(
-                y_test_scaled, predictions_scaled, multioutput="raw_values"
+                y_test_scaled, test_predictions_scaled, multioutput="raw_values"
             )
 
             mlflow.log_metric(f"{model_name}_test_mae_oberflaechenspannung", mae[0])
@@ -407,3 +434,47 @@ class ModelTrainer:
                 f"Training and logging best model failed with error: {error_message}"
             )
             raise CustomException(error_message, sys) from error_message
+
+    def regression_report(self, train_pred, test_pred, model_name):
+        """
+        This method is responsible for generating regression report and saving it
+
+        Args:
+            test_pred (np.ndarray): The test predictions (inverse transformed)
+            train_pred (np.ndarray): The train predictions (inverse transformed)
+        """
+        targets = ["oberflaechenspannung", "anionischetenside", "nichtionischentenside"]
+
+        scaled_y_train = self.target_scaler.inverse_transform(train_pred)
+        scaled_y_test = self.target_scaler.inverse_transform(test_pred)
+
+        for i in range(3):
+            curr_target_name = targets[i]
+            curr_train_pred = train_pred[:, i]
+            curr_test_pred = test_pred[:, i]
+
+            column_mapping = ColumnMapping()
+            column_mapping.target = curr_target_name
+            column_mapping.prediction = "Prediction"
+
+            ref = pd.DataFrame(
+                {
+                    curr_target_name: scaled_y_train[:, i],
+                    "Prediction": curr_train_pred,
+                }
+            )
+            cur = pd.DataFrame(
+                {curr_target_name: scaled_y_test[:, i], "Prediction": curr_test_pred}
+            )
+
+            reg_performance_report = Report(
+                metrics=[RegressionPreset()], column_mapping=column_mapping
+            )
+
+        reg_performance_report.run(reference_data=ref, current_data=cur)
+        reg_performance_report.save_html(
+            os.path.join(
+                self.trainer_paths.explainability_path,
+                f"{model_name}_{curr_target_name}_performance_report.html",
+            )
+        )
