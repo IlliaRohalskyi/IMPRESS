@@ -315,8 +315,6 @@ class ModelTrainer:
 
             for model, weight in zip(best_models, weights):
                 train_predictions = model.predict(self.data.x_train)
-                print(train_predictions.shape)
-                print(self.data.x_train.shape)
                 train_ensemble_predictions += weight * train_predictions
                 test_predictions = model.predict(self.data.x_test)
                 test_ensemble_predictions += weight * test_predictions
@@ -384,6 +382,7 @@ class ModelTrainer:
                     xgb_model=best_model,
                     artifact_path=f"models/{model_name}",
                     registered_model_name=model_name,
+                    model_format="pkl",
                 )
             elif model_name == "rf":
                 mlflow.sklearn.log_model(
@@ -443,38 +442,50 @@ class ModelTrainer:
             test_pred (np.ndarray): The test predictions (inverse transformed)
             train_pred (np.ndarray): The train predictions (inverse transformed)
         """
-        targets = ["oberflaechenspannung", "anionischetenside", "nichtionischentenside"]
+        try:
+            targets = [
+                "oberflaechenspannung",
+                "anionischetenside",
+                "nichtionischentenside",
+            ]
 
-        scaled_y_train = self.target_scaler.inverse_transform(train_pred)
-        scaled_y_test = self.target_scaler.inverse_transform(test_pred)
+            scaled_y_train = self.target_scaler.inverse_transform(self.data.y_train)
+            scaled_y_test = self.target_scaler.inverse_transform(self.data.y_test)
 
-        for i in range(3):
-            curr_target_name = targets[i]
-            curr_train_pred = train_pred[:, i]
-            curr_test_pred = test_pred[:, i]
+            for i in range(3):
+                curr_target_name = targets[i]
+                curr_train_pred = train_pred[:, i]
+                curr_test_pred = test_pred[:, i]
 
-            column_mapping = ColumnMapping()
-            column_mapping.target = curr_target_name
-            column_mapping.prediction = "Prediction"
+                column_mapping = ColumnMapping()
+                column_mapping.target = curr_target_name
+                column_mapping.prediction = "Prediction"
 
-            ref = pd.DataFrame(
-                {
-                    curr_target_name: scaled_y_train[:, i],
-                    "Prediction": curr_train_pred,
-                }
-            )
-            cur = pd.DataFrame(
-                {curr_target_name: scaled_y_test[:, i], "Prediction": curr_test_pred}
-            )
+                ref = pd.DataFrame(
+                    {
+                        curr_target_name: scaled_y_train[:, i],
+                        "Prediction": curr_train_pred,
+                    }
+                )
+                cur = pd.DataFrame(
+                    {
+                        curr_target_name: scaled_y_test[:, i],
+                        "Prediction": curr_test_pred,
+                    }
+                )
 
-            reg_performance_report = Report(
-                metrics=[RegressionPreset()], column_mapping=column_mapping
-            )
+                reg_performance_report = Report(metrics=[RegressionPreset()])
 
-        reg_performance_report.run(reference_data=ref, current_data=cur)
-        reg_performance_report.save_html(
-            os.path.join(
-                self.trainer_paths.explainability_path,
-                f"{model_name}_{curr_target_name}_performance_report.html",
-            )
-        )
+                reg_performance_report.run(
+                    reference_data=ref, current_data=cur, column_mapping=column_mapping
+                )
+                reg_performance_report.save_html(
+                    os.path.join(
+                        self.trainer_paths.explainability_path,
+                        f"{model_name}_{curr_target_name}_performance_report.html",
+                    )
+                )
+
+        except Exception as error_message:
+            logging.error(f"Regression report failed with error: {error_message}")
+            raise CustomException(error_message, sys) from error_message
