@@ -382,7 +382,6 @@ class ModelTrainer:
                     xgb_model=best_model,
                     artifact_path=f"models/{model_name}",
                     registered_model_name=model_name,
-                    model_format="pkl",
                 )
             elif model_name == "rf":
                 mlflow.sklearn.log_model(

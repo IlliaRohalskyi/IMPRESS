@@ -35,83 +35,67 @@ class ModelAndScalers:
 
 
 def get_models(
-    model_names: Tuple[str] = ("rf", "xgb"),
-    models_path: str = os.path.join(get_project_root(), "ml_downloads"),
-    save: bool = False,
-    load: bool = True,
+    model_names: Tuple[str] = ("xgb", "rf"),
+    scalers_path: str = os.path.join(get_project_root(), "ml_downloads"),
 ):
     """
-    Load production models and scalers from the MLFlow model registry and save them.
+    Load production models and scalers from the MLFlow model registry.
+    Save scalers at scalers_path directory
     Args:
         model_names (Tuple[str]): Names of the MLFlow models to load.
-        models_path (str): The path where the loaded models and scalers will be saved as a pickle file. If not provided,
-            the default path is used.
+        scalers_path (str): The path where the  scalers will be saved as a pickle file.
+        If not provided, the default path is used.
 
     Returns:
-        None
+        List: A list of ModelAndScalers objects which stores the loaded model
+        and scalers associated to the model
     """
     try:
         mlflow.set_tracking_uri("https://dagshub.com/IlliaRohalskyi/IMPRESS.mlflow")
-        if save:
-            if os.path.exists(models_path):
-                shutil.rmtree(models_path)
+        models_and_scalers = []
+        if os.path.exists(scalers_path):
+            shutil.rmtree(scalers_path)
 
-            for model_name in model_names:
-                latest_versions = mlflow.tracking.MlflowClient().get_latest_versions(
-                    name=model_name, stages=["Production"]
+        for model_name in model_names:
+            latest_versions = mlflow.tracking.MlflowClient().get_latest_versions(
+                name=model_name, stages=["Production"]
+            )
+
+            if latest_versions:
+                latest_version = latest_versions[0]
+                mlflow.artifacts.download_artifacts(
+                    run_id=latest_version.run_id,
+                    artifact_path="scalers/",
+                    dst_path=os.path.join(scalers_path, f"{model_name}"),
                 )
 
-                if latest_versions:
-                    latest_version = latest_versions[0]
-                    mlflow.artifacts.download_artifacts(
-                        run_id=latest_version.run_id,
-                        artifact_path="scalers/",
-                        dst_path=os.path.join(models_path, f"{model_name}"),
-                    )
-
-                    mlflow.artifacts.download_artifacts(
-                        run_id=latest_version.run_id,
-                        artifact_path=f"models/{model_name}",
-                        dst_path=os.path.join(models_path, f"{model_name}"),
-                    )
-        if load:
-            models_and_scalers = []
-            for model_name in model_names:
-                model_and_scalers = ModelAndScalers
-
-                model_and_scalers.model_name = model_name
-
-                model_path = os.path.join(
-                    models_path, model_name, "models", model_name, "model.pkl"
-                )
                 model = (
-                    XGBRegressor().load_model(model_path)
+                    mlflow.xgboost.load_model(
+                        f"runs:/{latest_version.run_id}/models/{model_name}"
+                    )
                     if model_name == "xgb"
-                    else load_pickle(model_path)
+                    else mlflow.sklearn.load_model(
+                        f"runs:/{latest_version.run_id}/models/{model_name}"
+                    )
                 )
-                print(model)
-                model_and_scalers.model = model
 
                 feature_scaler_path = os.path.join(
-                    models_path, model_name, "scalers", "feature_scaler.pkl"
+                    scalers_path, model_name, "scalers", "feature_scaler.pkl"
                 )
                 target_scaler_path = os.path.join(
-                    models_path, model_name, "scalers", "target_scaler.pkl"
+                    scalers_path, model_name, "scalers", "target_scaler.pkl"
                 )
 
                 feature_scaler = load_pickle(feature_scaler_path)
-                model_and_scalers.feature_scaler = feature_scaler
 
                 target_scaler = load_pickle(target_scaler_path)
-                model_and_scalers.target_scaler = target_scaler
 
+                model_and_scalers = ModelAndScalers(
+                    model, model_name, feature_scaler, target_scaler
+                )
                 models_and_scalers.append(model_and_scalers)
-            return models_and_scalers
+        return models_and_scalers
 
     except Exception as error_message:
         logging.error(f"Model loader failed: {error_message}")
         raise CustomException(error_message, sys) from error_message
-
-
-if __name__ == "__main__":
-    a, b = get_models(load=True)
