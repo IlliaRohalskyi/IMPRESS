@@ -1,9 +1,9 @@
 """
 Model Loader Script
 
-This script provides functions to download machine learning models from the MLFlow model registry, save them
-as a dictionary, and retrieve these models for predictions.
-
+This script provides functions to download machine learning models 
+from the MLFlow model registry, save them as a dictionary,
+and retrieve these models for predictions.
 """
 
 import os

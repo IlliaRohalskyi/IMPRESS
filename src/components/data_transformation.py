@@ -38,13 +38,6 @@ class DataTransformationConfig:
 
     This class represents configuration options for data transformation tasks.
     It provides default values for the path of scaler file.
-
-    Attributes:
-        scaler_path (str): The default path of the scaler file.
-
-    Example:
-        config = DataTransformationConfig()
-        print(config.scaler_path)
     """
 
     feature_scaler_path: str = os.path.join(
