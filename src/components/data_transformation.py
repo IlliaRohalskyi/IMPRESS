@@ -190,10 +190,10 @@ class DataTransformation:
             logging.info("Processing online data")
 
             if "vorschlagsnummer" in online_data.columns:
-                online_df = online_data[online_data["vorschlagsnummer"] >= 0]
+                online_data = online_data[online_data["vorschlagsnummer"] >= 0]
 
             if "experimentnummer" in online_data.columns:
-                online_data_dropped = online_df[
+                online_data_dropped = online_data[
                     [
                         "experimentnummer",
                         "waschen",
@@ -206,7 +206,7 @@ class DataTransformation:
                 ]
 
             else:
-                online_data_dropped = online_df[
+                online_data_dropped = online_data[
                     ["waschen", "truebung", "druck1", "fluss1", "ph", "leitfaehigkeit"]
                 ]
 

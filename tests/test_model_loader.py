@@ -14,8 +14,8 @@ from src.components.model_loader import get_models
 from src.utils import get_project_root
 
 
-@pytest.fixture(scope="function")
-def test_directory():
+@pytest.fixture(name="test_directory")
+def fixture_test_directory():
     """
     Creates a temporary test directory for testing.
 
@@ -25,7 +25,7 @@ def test_directory():
     test_dir = os.path.join(
         get_project_root(), "tests", "test_data", "test_model_loader"
     )
-    os.makedirs(test_dir)
+    os.makedirs(test_dir, exist_ok=True)
     yield test_dir
 
 
