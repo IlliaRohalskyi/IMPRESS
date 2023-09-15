@@ -1,3 +1,10 @@
+"""
+Test Module for Model Loader Script
+
+This module contains unit tests for the functions in the Model Loader script.
+It tests the functionality of loading machine learning models and associated scalers
+from the MLFlow model registry.
+"""
 import os
 import shutil
 
@@ -9,6 +16,12 @@ from src.utils import get_project_root
 
 @pytest.fixture(scope="function")
 def test_directory():
+    """
+    Creates a temporary test directory for testing.
+
+    Returns:
+        str: The path to the temporary test directory.
+    """
     test_dir = os.path.join(
         get_project_root(), "tests", "test_data", "test_model_loader"
     )
@@ -17,10 +30,15 @@ def test_directory():
 
 
 def test_get_models_empty(test_directory):
-    # Call the function with the test directory as scalers path
+    """
+    Tests the get_models function with an empty directory.
+
+    Args:
+        test_directory (str): The temporary test directory path created by the fixture.
+    """
+
     models_and_scalers = get_models(scalers_path=test_directory)
 
-    # Add your assertions here
     assert isinstance(models_and_scalers, list)
     assert len(models_and_scalers) != 0
     shutil.rmtree(test_directory)
