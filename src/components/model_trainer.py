@@ -207,8 +207,6 @@ class ModelTrainer:
 
             models = ["xgb", "rf"]
 
-            mlflow.set_tracking_uri("https://dagshub.com/IlliaRohalskyi/IMPRESS.mlflow")
-
             with mlflow.start_run():
                 mlflow.log_param("git_hash", self.git_hash)
 

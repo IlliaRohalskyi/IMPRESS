@@ -51,7 +51,6 @@ def get_models(
         and scalers associated to the model
     """
     try:
-        mlflow.set_tracking_uri("https://dagshub.com/IlliaRohalskyi/IMPRESS.mlflow")
         models_and_scalers = []
         if os.path.exists(scalers_path):
             shutil.rmtree(scalers_path)
