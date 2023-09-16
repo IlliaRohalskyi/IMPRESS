@@ -26,7 +26,7 @@ def fixture_test_directory():
         str: The path to the temporary test directory.
     """
     test_dir = os.path.join(
-        get_project_root(), "tests", "test_data", "test_model_loader"
+        get_project_root(), "tests", "test_data", "test_predict_integration"
     )
     os.makedirs(test_dir, exist_ok=True)
     yield test_dir
@@ -45,20 +45,12 @@ def fixture_pred_data():
         sep=";",
     )
     synthetic_data["waschen"] = 1
-    synthetic_pred = synthetic_data[
-        [
-            "waschen",
-            "truebung",
-            "druck1",
-            "fluss1",
-            "ph",
-            "leitfaehigkeit",
-        ]
-    ]
-    yield synthetic_pred
+    synthetic_data.drop(columns=["experimentnummer"])
+
+    yield synthetic_data
 
 
-def test_get_models_empty(test_directory, pred_data):
+def test_integration(test_directory, pred_data):
     """
     Tests interaction between prediction pipeline components. Simulates the flow
 
@@ -75,7 +67,6 @@ def test_get_models_empty(test_directory, pred_data):
     predictions = ensemble_predict.fn(
         result=result_transformation, models_and_scalers=models_and_scalers
     )
-    print(predictions.shape)
     assert predictions.shape[1] == 3
 
     shutil.rmtree(test_directory)

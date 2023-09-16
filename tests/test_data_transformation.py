@@ -144,14 +144,12 @@ def test_data_transformation(_, data_transformation_obj):
     assert isinstance(y_train, np.ndarray), "y_train should be a numpy array"
     assert isinstance(x_test, np.ndarray), "x_test should be a numpy array"
     assert isinstance(y_test, np.ndarray), "y_test should be a numpy array"
-    assert isinstance(x_pred, np.ndarray), "x_pred should be a numpy array"
 
     # Test 2: Float dtype
     assert x_train.dtype == np.float64, "x_train dtype should be float64"
     assert y_train.dtype == np.float64, "y_train dtype should be float64"
     assert x_test.dtype == np.float64, "x_test dtype should be float64"
     assert y_test.dtype == np.float64, "y_test dtype should be float64"
-    assert x_pred.dtype == np.float64, "x_pred dtype should be float64"
 
     # Test 3: No NaN
     assert not np.any(np.isnan(x_train)), "x_train should not contain NaN values"

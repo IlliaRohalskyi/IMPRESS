@@ -15,7 +15,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 from src.exception import CustomException
 from src.logger import logging
-from src.utils import get_project_root, load_pickle, save_pickle
+from src.utils import get_project_root, save_pickle
 
 
 @dataclass
@@ -84,7 +84,7 @@ class DataTransformation:
                 TrainTestData class instance with data ready for training
 
             else:
-                np.array of features ready for prediction
+                pd.DataFrame of features ready for prediction
         """
         logging.info("Initiating data transformation")
 
@@ -167,8 +167,7 @@ class DataTransformation:
                     feature_names=merged_data_final.columns[:-3],
                 )
 
-            feature_scaler = load_pickle(self.transformation_config.feature_scaler_path)
-            return np.array(feature_scaler.transform(online_data_final))
+            return online_data_final
 
         except Exception as error_message:
             logging.error(f"Data transformation failed with error: {error_message}")

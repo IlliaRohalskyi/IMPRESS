@@ -20,16 +20,24 @@ def data_transformation(pred_data, models_and_scalers):
     Task for data transformation.
 
     Args:
-        result (dict): Dictionary containing scaled online data for each model.
+        pred_data (dict): Dictionary containing scaled online data for each model.
 
     Returns:
-        dict: Dictionary containing transformed train-test data.
+        dict: Dictionary containing transformed prediction data.
     """
     return_dict = {}
     tr_data = DataTransformation().initiate_data_transformation(pred_data, None)
+
     for model_and_scalers in models_and_scalers:
-        scaled_data = model_and_scalers.feature_scaler.transform(tr_data)
+        scaler = model_and_scalers.feature_scaler
+        scaler_columns = scaler.feature_names_in_
+
+        scaled_data = tr_data[scaler_columns]
+
+        scaled_data = scaler.transform(scaled_data)
+
         return_dict[f"transformed_data_{model_and_scalers.model_name}"] = scaled_data
+
     return return_dict
 
 
