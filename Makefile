@@ -1,5 +1,5 @@
 lint:
-	pylint src tests
+	pylint src tests app.py
 
 test:
 	pytest tests

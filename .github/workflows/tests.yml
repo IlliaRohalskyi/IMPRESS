@@ -30,4 +30,4 @@ jobs:
 
     - name: Run linting
       run: |
-        pylint src tests
+        pylint src tests app.py
