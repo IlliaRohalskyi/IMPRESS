@@ -146,8 +146,44 @@ In our project, we rely on a variety of tools to effectively manage and enhance 
 
 
 \chapter{System Architecture}
-\section{System Overview}
-\section{Components and Modules}
+\section{Overall Architecture}
+
+The architecture of the system is organized to provide a clear structure for both development and deployment. It consists of several key components and directories that contribute to the project's functionality. In this documentation, we have omitted unnecessary files and folders to provide a concise and focused representation of the system architecture, allowing for a clearer understanding of the key components and their relationships.
+Now, let's provide an overview of the project structure with the assistance of a diagram:
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{System_architecture.png}
+\caption{Project Structure Diagram}
+\label{fig:system-architecture}
+\end{figure}
+
+In the diagram above, you'll gain a visual understanding of how the project was structured. As we delve into each component in detail, this diagram will serve as a good reference point.
+\subsection{Source Components (\texttt{src/components})}
+
+This directory houses modular components that serve specific functions. These components can either be used independently or combined to accomplish more extensive tasks.
+
+\subsection{Pipelines (\texttt{src/pipelines})}
+
+The \texttt{pipelines} directory contains modules that orchestrate the execution of various components to achieve specific tasks. These pipelines are designed to streamline complex workflows, such as data transformation and model prediction.
+
+\subsection{Web Application (\texttt{app.py})}
+
+The project's main entry point is \texttt{app.py}, which is responsible for creating the web application. This application is designed for deployment and serves as the interface for users to interact with the system.
+
+\subsection{Templates (\texttt{templates})}
+
+Within this directory, you'll find HTML templates that define the structure and layout of web pages displayed by the application. These templates are used by \texttt{app.py} to render user interfaces.
+
+\subsection{Testing (\texttt{tests})}
+
+The \texttt{tests} directory is dedicated to testing the system's components and their integration. It includes unit tests for individual components as well as tests for the entire pipeline to ensure robust functionality.
+
+\subsection{Notebooks (\texttt{src/notebooks})}
+
+This directory contains Jupyter notebooks used for data analysis and exploration. While not directly involved in the project's core functionality, these notebooks are valuable for gaining insights and conducting experiments.
+
+The architecture is designed to promote modularity, maintainability, and scalability. Components and pipelines can be developed and tested independently, making it easier to extend and enhance the system's capabilities. Additionally, the clear separation of concerns between components and the web application simplifies the development and deployment process.
 
 \chapter{Deployment}
 \section{Deployment Diagram}
