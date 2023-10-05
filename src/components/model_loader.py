@@ -19,7 +19,7 @@ from xgboost import XGBRegressor
 
 from src.exception import CustomException
 from src.logger import logging
-from src.utils import get_project_root, load_pickle
+from src.utils import get_project_root, load_pickle, save_pickle
 
 
 @dataclass
@@ -40,7 +40,11 @@ def get_models(
 ):
     """
     Load production models and scalers from the MLFlow model registry.
-    Save scalers at scalers_path directory
+    Save scalers at scalers_path directory.
+
+    !!!!!!!!!!!!!WARNING!!!!!!!!!!!!
+    This function needs MLFlow credentials
+
     Args:
         model_names (Tuple[str]): Names of the MLFlow models to load.
         scalers_path (str): The path where the  scalers will be saved as a pickle file.
@@ -51,7 +55,6 @@ def get_models(
         and scalers associated to the model
     """
     try:
-        models_and_scalers = []
         if os.path.exists(scalers_path):
             shutil.rmtree(scalers_path)
 
@@ -92,9 +95,15 @@ def get_models(
                 model_and_scalers = ModelAndScalers(
                     model, model_name, feature_scaler, target_scaler
                 )
-                models_and_scalers.append(model_and_scalers)
-        return models_and_scalers
+                save_pickle(
+                    model_and_scalers,
+                    os.path.join(scalers_path, model_name, "model_and_scalers.pkl"),
+                )
 
     except Exception as error_message:
         logging.error(f"Model loader failed: {error_message}")
         raise CustomException(error_message, sys) from error_message
+
+
+if __name__ == "__main__":
+    get_models()

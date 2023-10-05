@@ -54,3 +54,8 @@ def test_data_ingestion(data_ingestion_object):
     # Check data types
     assert isinstance(online_data, pd.DataFrame), "Online data should be a DataFrame"
     assert isinstance(offline_data, pd.DataFrame), "Offline data should be a DataFrame"
+
+
+def test_sql_ingestion(data_ingestion_object):
+    data = data_ingestion_object.get_sql_pred_table()
+    assert isinstance(data, pd.DataFrame), "SQL data should be a DataFrame"

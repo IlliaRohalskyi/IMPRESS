@@ -8,6 +8,7 @@ import sys
 from dataclasses import dataclass
 
 import pandas as pd
+import psycopg2
 
 from src.exception import CustomException
 from src.logger import logging
@@ -81,3 +82,28 @@ class DataIngestion:
         except Exception as error_message:
             logging.error(f"Data ingestion failed with error: {error_message}")
             raise CustomException(error_message, sys) from error_message
+
+    def get_sql_pred_table(self):
+        try:
+            hostname = os.environ.get("DB_HOSTNAME")
+            database_name = os.environ.get("DB_NAME")
+            username = os.environ.get("DB_USERNAME")
+            password = os.environ.get("DB_PASSWORD")
+
+            connection = psycopg2.connect(
+                host=hostname, database=database_name, user=username, password=password
+            )
+
+            query = "SELECT * FROM online_data;"
+
+            df = pd.read_sql_query(query, connection)
+
+            return df
+
+        except psycopg2.Error as error_message:
+            logging.error(f"Error connecting to the database: {error_message}")
+            raise CustomException(error_message, sys) from error_message
+
+        finally:
+            if connection:
+                connection.close()
