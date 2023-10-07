@@ -84,7 +84,7 @@ class DataTransformation:
                 TrainTestData class instance with data ready for training
 
             else:
-                pd.DataFrame of features ready for prediction
+                pd.DataFrame of features for prediction with experimentnummer and waschen values
         """
         logging.info("Initiating data transformation")
 
@@ -191,23 +191,17 @@ class DataTransformation:
             if "vorschlagsnummer" in online_data.columns:
                 online_data = online_data[online_data["vorschlagsnummer"] >= 0]
 
-            if "experimentnummer" in online_data.columns:
-                online_data_dropped = online_data[
-                    [
-                        "experimentnummer",
-                        "waschen",
-                        "truebung",
-                        "druck1",
-                        "fluss1",
-                        "ph",
-                        "leitfaehigkeit",
-                    ]
+            online_data_dropped = online_data[
+                [
+                    "experimentnummer",
+                    "waschen",
+                    "truebung",
+                    "druck1",
+                    "fluss1",
+                    "ph",
+                    "leitfaehigkeit",
                 ]
-
-            else:
-                online_data_dropped = online_data[
-                    ["waschen", "truebung", "druck1", "fluss1", "ph", "leitfaehigkeit"]
-                ]
+            ]
 
             stat_functions = [
                 "mean",
@@ -217,14 +211,9 @@ class DataTransformation:
                 lambda x: x.quantile(0.75),
             ]
 
-            if "experimentnummer" in online_data_dropped.columns:
-                online_data_final = online_data_dropped.groupby(
-                    ["experimentnummer", "waschen"]
-                ).agg(stat_functions)
-            else:
-                online_data_final = online_data_dropped.groupby(["waschen"]).agg(
-                    stat_functions
-                )
+            online_data_final = online_data_dropped.groupby(
+                ["experimentnummer", "waschen"]
+            ).agg(stat_functions)
 
             online_data_final.columns = [
                 f"{col}_std"

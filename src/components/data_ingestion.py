@@ -84,6 +84,14 @@ class DataIngestion:
             raise CustomException(error_message, sys) from error_message
 
     def get_sql_pred_table(self):
+        """
+        Initiate the data ingestion process from a Postgres database.
+
+        This method triggers the ingestion of data from the database
+
+        Returns:
+            pandas.DataFrame: A DataFrame containing the ingested prediction data.
+        """
         try:
             hostname = os.environ.get("DB_HOSTNAME")
             database_name = os.environ.get("DB_NAME")

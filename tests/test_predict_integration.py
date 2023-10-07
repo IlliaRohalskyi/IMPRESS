@@ -13,7 +13,8 @@ import pytest
 
 from src.components.model_loader import get_models
 from src.pipelines.predict_pipeline import (data_transformation,
-                                            ensemble_predict)
+                                            ensemble_predict,
+                                            load_data_and_models)
 from src.utils import get_project_root
 
 
@@ -59,14 +60,11 @@ def test_integration(test_directory, pred_data):
         pred_data (pd.DataFrame): The dataframe to run pipeline on.
     """
 
-    models_and_scalers = get_models(scalers_path=test_directory)
+    get_models(scalers_path=test_directory)
 
-    result_transformation = data_transformation.fn(
-        pred_data=pred_data, models_and_scalers=models_and_scalers
-    )
-    predictions = ensemble_predict.fn(
-        result=result_transformation, models_and_scalers=models_and_scalers
-    )
+    result_load = load_data_and_models.fn()
+    result_transformation = data_transformation.fn(result_load)
+    predictions = ensemble_predict.fn(result_transformation)
     assert predictions.shape[1] == 3
 
     shutil.rmtree(test_directory)

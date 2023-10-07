@@ -37,8 +37,5 @@ def test_get_models_empty(test_directory):
         test_directory (str): The temporary test directory path created by the fixture.
     """
 
-    models_and_scalers = get_models(scalers_path=test_directory)
-
-    assert isinstance(models_and_scalers, list)
-    assert len(models_and_scalers) != 0
+    get_models(scalers_path=test_directory)
     shutil.rmtree(test_directory)

@@ -7,10 +7,15 @@ from utils import get_project_root
 
 @dataclass
 class MonitoringConfig():
-
+    
+    
 class ModelMonitoring():
-    def __init__(self):
+    def __init__(self, data):
+        self.data = data
 
-    def monitor_data_drift(self):
+    def check_model(self):
         
-    def monitor_pred_drift(self):
+    def check_data_drift(self):
+        
+    def check_pred_drift(self):
+        
