@@ -83,7 +83,7 @@ class DataIngestion:
             logging.error(f"Data ingestion failed with error: {error_message}")
             raise CustomException(error_message, sys) from error_message
 
-    def get_sql_pred_table(self):
+    def get_sql_pred_table(self, table_name):
         """
         Initiate the data ingestion process from a Postgres database.
 
@@ -102,7 +102,7 @@ class DataIngestion:
                 host=hostname, database=database_name, user=username, password=password
             )
 
-            query = "SELECT * FROM online_data;"
+            query = f"SELECT * FROM {table_name};"
 
             df = pd.read_sql_query(query, connection)
 

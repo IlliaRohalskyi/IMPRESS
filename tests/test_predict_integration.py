@@ -3,68 +3,67 @@ Predict Pipeline Integration Tests
 
 This module contains integration tests for the prediction pipeline components.
 It tests the interaction between the data transformation and ensemble prediction tasks
-to ensure that the pipeline generates predictions correctly.
+to ensure that the pipeline generates predictions correctly and behaves as expected.
 """
 import os
 import shutil
 
 import pandas as pd
-import pytest
+import psycopg2
+from sqlalchemy import create_engine
 
-from src.components.model_loader import get_models
-from src.pipelines.predict_pipeline import (data_transformation,
-                                            ensemble_predict,
-                                            load_data_and_models)
+from src.pipelines.predict_pipeline import prediction_pipeline
+from src.components.model_loader import ModelAndScalers, get_models
 from src.utils import get_project_root
 
 
-@pytest.fixture(name="test_directory")
-def fixture_test_directory():
+def test_pred_integration():
     """
-    Creates a temporary test directory for testing.
-
-    Returns:
-        str: The path to the temporary test directory.
+    Runs the prediction pipeline on a test table.
+    Checks whether archive table has records and deletes them.
+    Checks whether pred table does not have any records and creates them.
     """
-    test_dir = os.path.join(
-        get_project_root(), "tests", "test_data", "test_predict_integration"
+    pred_table_name = "test_online_data"
+    archive_table_name = "test_archived_data"
+    test_csv_path = os.path.join(
+        get_project_root(), "tests", "test_data", "synthetic_online.csv"
     )
-    os.makedirs(test_dir, exist_ok=True)
-    yield test_dir
 
-
-@pytest.fixture(name="pred_data")
-def fixture_pred_data():
-    """
-    Loads online synthetic data and formats it as expected for prediction
-
-    Returns:
-        pd.DataFrame: Dataframe that is ready to be fed into prediction pipeline
-    """
-    synthetic_data = pd.read_csv(
-        os.path.join(get_project_root(), "tests", "test_data", "synthetic_online.csv"),
-        sep=";",
+    get_models()
+    prediction_pipeline(
+        pred_table_name=pred_table_name, write_table_name=archive_table_name
     )
-    synthetic_data["waschen"] = 1
-    synthetic_data.drop(columns=["experimentnummer"])
 
-    yield synthetic_data
+    hostname = os.environ.get("DB_HOSTNAME")
+    database_name = os.environ.get("DB_NAME")
+    username = os.environ.get("DB_USERNAME")
+    password = os.environ.get("DB_PASSWORD")
 
+    connection = psycopg2.connect(
+        host=hostname, database=database_name, user=username, password=password
+    )
 
-def test_integration(test_directory, pred_data):
-    """
-    Tests interaction between prediction pipeline components. Simulates the flow
+    cursor = connection.cursor()
 
-    Args:
-        test_directory (str): The temporary test directory path created by the fixture.
-        pred_data (pd.DataFrame): The dataframe to run pipeline on.
-    """
+    cursor.execute(f"SELECT COUNT(*) FROM {pred_table_name}")
+    assert cursor.fetchone()[0] == 0, "Pred table has entries"
 
-    get_models(scalers_path=test_directory)
+    cursor.execute(f"SELECT COUNT(*) FROM {archive_table_name}")
+    assert cursor.fetchone()[0] != 0, "Archive table does not have entries"
 
-    result_load = load_data_and_models.fn()
-    result_transformation = data_transformation.fn(result_load)
-    predictions = ensemble_predict.fn(result_transformation)
-    assert predictions.shape[1] == 3
+    delete_query = f"DELETE FROM {archive_table_name}"
+    cursor.execute(delete_query)
 
-    shutil.rmtree(test_directory)
+    data = pd.read_csv(test_csv_path, delimiter=";")
+
+    engine = create_engine(
+        f"postgresql://{username}:{password}@{hostname}/{database_name}"
+    )
+
+    data.to_sql(pred_table_name, engine, if_exists="append", index=False)
+
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+    shutil.rmtree(os.path.join(get_project_root(), "ml_downloads"))

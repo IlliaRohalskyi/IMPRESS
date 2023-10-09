@@ -14,8 +14,7 @@ from unittest.mock import patch
 import pandas as pd
 
 from src.components.data_ingestion import DataIngestion
-from src.components.data_transformation import (DataTransformation,
-                                                TrainTestData)
+from src.components.data_transformation import DataTransformation, TrainTestData
 from src.components.model_trainer import ModelTrainer
 from src.utils import get_project_root
 

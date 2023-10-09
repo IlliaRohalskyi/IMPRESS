@@ -12,10 +12,12 @@ The flow orchestrates the execution of these tasks to generate predictions.
 """
 
 import os
+import sys
 
 import pandas as pd
 import psycopg2
-from prefect import Flow, task
+from prefect import flow, task
+from sqlalchemy import create_engine
 
 from src.components.data_ingestion import DataIngestion
 from src.components.data_transformation import DataTransformation
@@ -27,12 +29,13 @@ from src.utils import get_project_root, load_pickle
 
 @task
 def load_data_and_models(
-    ml_downloads_path=os.path.join(get_project_root(), "ml_downloads")
+    table_name, ml_downloads_path=os.path.join(get_project_root(), "ml_downloads")
 ):
     """
     Load Machine Learning Models and Prediction Data.
 
     Args:
+        table_name: Name of the table to predict in PostgreSQL database.
         ml_downloads_path (str): Path to the directory containing downloaded models.
                                           Defaults to 'ml_downloads' in the project root.
 
@@ -46,11 +49,11 @@ def load_data_and_models(
                 os.path.join(ml_downloads_path, model_name, "model_and_scalers.pkl")
             )
             models_and_scalers.append(model_and_scalers)
-        pred_data = DataIngestion().get_sql_pred_table()
+        pred_data = DataIngestion().get_sql_pred_table(table_name)
         return {"models_and_scalers": models_and_scalers, "pred_data": pred_data}
-    except Exception as e:
-        logging.error(f"Error loading data and models: {e}")
-        raise CustomException(f"Error loading data and models: {e}") from e
+    except Exception as error_message:
+        logging.error(f"Error loading data and models: {error_message}")
+        raise CustomException(error_message, sys) from error_message
 
 
 @task
@@ -86,9 +89,9 @@ def data_transformation(results):
             ] = scaled_data
         return_dict["models_and_scalers"] = models_and_scalers
         return return_dict
-    except Exception as e:
-        logging.error(f"Error during data transformation: {e}")
-        raise CustomException(f"Error during data transformation: {e}") from e
+    except Exception as error_message:
+        logging.error(f"Error during data transformation: {error_message}")
+        raise CustomException(error_message, sys) from error_message
 
 
 @task
@@ -117,20 +120,20 @@ def ensemble_predict(result):
         output["tr_data"] = result["tr_data"]
         output["preds"] = preds_scaled
         return output
-    except Exception as e:
-        logging.error(f"Error during ensemble prediction: {e}")
-        raise CustomException(f"Error during ensemble prediction: {e}") from e
+    except Exception as error_message:
+        logging.error(f"Error during ensemble prediction: {error_message}")
+        raise CustomException(error_message, sys) from error_message
 
 
 @task
-def write_and_delete_data(results):
+def write_and_delete_data(results, table_name, write_table_name):
     """
-    Write predictions to 'archived_data' table and delete source data.
+    Write predictions to archived table and delete source data.
 
     Args:
         results (dict): A dictionary containing predictions and transformed data.
-
-    Deletes data from the source table and appends predictions to 'archived_data'.
+        table_name (str): The name of the table to delete after the prediction.
+        write_table_name (str): The name of the table to write the predictions to.
     """
     try:
         hostname = os.environ.get("DB_HOSTNAME")
@@ -165,30 +168,39 @@ def write_and_delete_data(results):
 
         cursor = connection.cursor()
 
-        df.to_sql("archived_data", connection, if_exists="append", index=False)
+        engine = create_engine(
+            f"postgresql://{username}:{password}@{hostname}/{database_name}"
+        )
 
-        source_table_name = "online_data"
-        delete_query = f"DELETE FROM {source_table_name}"
+        df.to_sql(write_table_name, engine, if_exists="append", index=False)
+
+        delete_query = f"DELETE FROM {table_name}"
         cursor.execute(delete_query)
         connection.commit()
 
         cursor.close()
         connection.close()
-    except Exception as e:
-        logging.error(f"Error during data write and delete: {e}")
-        raise CustomException(f"Error during data write and delete: {e}") from e
+    except Exception as error_message:
+        logging.error(f"Error during data write and delete: {error_message}")
+        raise CustomException(error_message, sys) from error_message
 
 
-@Flow(name="prediction_pipeline")
-def prediction_pipeline():
+@flow(name="prediction_pipeline")
+def prediction_pipeline(
+    pred_table_name="online_data", write_table_name="archived_data"
+):
     """
     Prefect flow that orchestrates the execution of data loading,
     data transformation, and model prediction tasks.
+
+    Args:
+        pred_table_name: The name of the prediction table in PostgreSQL database.
+        write_table_name: The name of the table to write the predictions to.
     """
-    result_load = load_data_and_models()
+    result_load = load_data_and_models(pred_table_name)
     result_transformation = data_transformation(result_load)
     result_predict = ensemble_predict(result_transformation)
-    write_and_delete_data(result_predict)
+    write_and_delete_data(result_predict, pred_table_name, write_table_name)
 
 
 if __name__ == "__main__":
