@@ -16,8 +16,6 @@ jobs:
       DB_NAME: ${{ secrets.DB_NAME }}
       DB_USERNAME: ${{ secrets.DB_USERNAME }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      PREFECT_CLOUD_API_TOKEN: ${{ secrets.PREFECT_CLOUD_API_TOKEN }}
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -29,9 +27,6 @@ jobs:
 
     - name: Install dependencies
       run: pip install -r requirements.txt
-
-    - name: Authenticate with Prefect Cloud
-      run: prefect cloud login -k $PREFECT_CLOUD_API_TOKEN
 
     - name: Run tests
       run: pytest tests
