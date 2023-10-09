@@ -57,5 +57,5 @@ def test_data_ingestion(data_ingestion_object):
 
 
 def test_sql_ingestion(data_ingestion_object):
-    data = data_ingestion_object.get_sql_pred_table()
+    data = data_ingestion_object.get_sql_pred_table("test_online_data")
     assert isinstance(data, pd.DataFrame), "SQL data should be a DataFrame"
