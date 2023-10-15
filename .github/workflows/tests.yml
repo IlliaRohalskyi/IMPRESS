@@ -16,6 +16,9 @@ jobs:
       DB_NAME: ${{ secrets.DB_NAME }}
       DB_USERNAME: ${{ secrets.DB_USERNAME }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v2

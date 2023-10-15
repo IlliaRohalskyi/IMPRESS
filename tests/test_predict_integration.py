@@ -12,8 +12,8 @@ import pandas as pd
 import psycopg2
 from sqlalchemy import create_engine
 
-from src.pipelines.predict_pipeline import prediction_pipeline
 from src.components.model_loader import ModelAndScalers, get_models
+from src.pipelines.predict_pipeline import prediction_pipeline
 from src.utils import get_project_root
 
 

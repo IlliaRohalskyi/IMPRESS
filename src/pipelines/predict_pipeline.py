@@ -4,9 +4,10 @@ Prediction Pipeline Prefect Flow
 This module defines a Prefect flow for data transformation and ensemble model prediction.
 
 Tasks:
-1. loa]_and_model: Task for loading machine learning models and prediction data.
+1. load_data_and_models: Task for loading machine learning models and prediction data.
 2. data_transformation: Task for transforming input data for each model.
 3. ensemble_predict: Task for making predictions using an ensemble of models.
+4. write_and_delete_data: Task for writing and deleting data.
 
 The flow orchestrates the execution of these tasks to generate predictions.
 """
@@ -49,7 +50,7 @@ def load_data_and_models(
                 os.path.join(ml_downloads_path, model_name, "model_and_scalers.pkl")
             )
             models_and_scalers.append(model_and_scalers)
-        pred_data = DataIngestion().get_sql_pred_table(table_name)
+        pred_data = DataIngestion().get_sql_table(table_name)
         return {"models_and_scalers": models_and_scalers, "pred_data": pred_data}
     except Exception as error_message:
         logging.error(f"Error loading data and models: {error_message}")
