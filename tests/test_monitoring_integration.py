@@ -17,6 +17,8 @@ def fixture_override_smtp_settings():
 
 
 def test_alert(override_smtp_settings):
+    smtp_server, smtp_port, table_name = override_smtp_settings
+
     hostname = os.environ.get("DB_HOSTNAME")
     database_name = os.environ.get("DB_NAME")
     username = os.environ.get("DB_USERNAME")
@@ -31,7 +33,6 @@ def test_alert(override_smtp_settings):
     )
 
     data.to_sql(table_name, engine, if_exists="append", index=False)
-    smtp_server, smtp_port, table_name = override_smtp_settings
     monitoring_pipeline(
         smtp_server=smtp_server, smtp_port=smtp_port, table_name=table_name
     )
