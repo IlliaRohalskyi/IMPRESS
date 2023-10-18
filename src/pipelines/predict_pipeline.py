@@ -22,7 +22,6 @@ from sqlalchemy import create_engine
 
 from src.components.data_ingestion import DataIngestion
 from src.components.data_transformation import DataTransformation
-from src.components.model_loader import ModelAndScalers
 from src.exception import CustomException
 from src.logger import logging
 from src.utils import get_project_root, load_pickle
@@ -154,7 +153,7 @@ def write_and_delete_data(results, table_name, write_table_name):
             ],
         )
 
-        df = pd.concat(
+        dataframe = pd.concat(
             [
                 tr_data[["experimentnummer", "waschen"]],
                 preds_df,
@@ -173,7 +172,7 @@ def write_and_delete_data(results, table_name, write_table_name):
             f"postgresql://{username}:{password}@{hostname}/{database_name}"
         )
 
-        df.to_sql(write_table_name, engine, if_exists="append", index=False)
+        dataframe.to_sql(write_table_name, engine, if_exists="append", index=False)
 
         delete_query = f"DELETE FROM {table_name}"
         cursor.execute(delete_query)

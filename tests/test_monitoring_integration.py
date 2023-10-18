@@ -1,23 +1,30 @@
+"""
+This module contains an integration test for the monitoring pipeline.
+It tests the entire pipeline with a mocked SMTP server.
+"""
 import os
+from unittest.mock import patch
 
 import pandas as pd
-import pytest
 from sqlalchemy import create_engine
 
 from src.pipelines.monitoring_pipeline import monitoring_pipeline
 from src.utils import get_project_root
 
 
-@pytest.fixture(name="override_smtp_settings")
-def fixture_override_smtp_settings():
+@patch("src.pipelines.monitoring_pipeline.smtplib.SMTP")
+def test_monitoring(_):
+    """
+    Integration test for the monitoring pipeline with a mocked SMTP server.
+
+    This test verifies the successful execution of the monitoring pipeline using synthetic data.
+
+    Args:
+        _: Mocked SMTP server object (unused).
+    """
     smtp_server = "localhost"
     smtp_port = 1025
     table_name = "test_archived_data"
-    return smtp_server, smtp_port, table_name
-
-
-def test_alert(override_smtp_settings):
-    smtp_server, smtp_port, table_name = override_smtp_settings
 
     hostname = os.environ.get("DB_HOSTNAME")
     database_name = os.environ.get("DB_NAME")

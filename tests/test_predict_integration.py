@@ -12,7 +12,7 @@ import pandas as pd
 import psycopg2
 from sqlalchemy import create_engine
 
-from src.components.model_loader import ModelAndScalers, get_models
+from src.components.model_loader import get_models
 from src.pipelines.predict_pipeline import prediction_pipeline
 from src.utils import get_project_root
 
@@ -33,6 +33,8 @@ def test_pred_integration():
     prediction_pipeline(
         pred_table_name=pred_table_name, write_table_name=archive_table_name
     )
+
+    shutil.rmtree(os.path.join(get_project_root(), "reports"))
 
     hostname = os.environ.get("DB_HOSTNAME")
     database_name = os.environ.get("DB_NAME")

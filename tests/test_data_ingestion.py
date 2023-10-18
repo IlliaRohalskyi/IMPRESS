@@ -57,5 +57,17 @@ def test_data_ingestion(data_ingestion_object):
 
 
 def test_sql_ingestion(data_ingestion_object):
+    """
+    Test the SQL data ingestion method.
+
+    Args:
+        data_ingestion_object (DataIngestion): An instance of the DataIngestion class.
+
+    Raises:
+        AssertionError: If the retrieved data is not a DataFrame.
+
+    This function tests the data ingestion from a SQL table and
+    checks if the retrieved data is a DataFrame.
+    """
     data = data_ingestion_object.get_sql_table("test_online_data")
     assert isinstance(data, pd.DataFrame), "SQL data should be a DataFrame"

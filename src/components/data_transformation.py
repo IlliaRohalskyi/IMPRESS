@@ -96,27 +96,8 @@ class DataTransformation:
 
                 logging.info("Merging offline and online data")
 
-                offline_data_target = offline_data_final.loc[
-                    :,
-                    [
-                        "experimentnummer",
-                        "waschen",
-                        "oberflaechenspannung",
-                        "anionischetenside",
-                        "nichtionischentenside",
-                    ],
-                ]
-
-                merged_data = pd.merge(
-                    online_data_final,
-                    offline_data_target,
-                    left_on=["experimentnummer", "waschen"],
-                    right_on=["experimentnummer", "waschen"],
-                    how="inner",
-                )
-
-                merged_data_final = merged_data.reset_index(drop=True).drop(
-                    columns=["experimentnummer"]
+                merged_data_final = self.merge_data(
+                    online_data_final, offline_data_final
                 )
 
                 train_data, test_data = train_test_split(
@@ -271,3 +252,37 @@ class DataTransformation:
             raise CustomException(error_message, sys) from error_message
 
         return offline_data_clean.drop(columns=["bemerkungen"])
+
+    def merge_data(self, preprocessed_online, preprocessed_offline):
+        """
+        Merge online and offline preprocessed data based on common columns.
+
+        Args:
+            preprocessed_online (pd.DataFrame): Preprocessed online data.
+            preprocessed_offline (pd.DataFrame): Preprocessed offline data.
+
+        Returns:
+            pd.DataFrame: Merged data with common columns, excluding 'experimentnummer'.
+        """
+        offline_data_target = preprocessed_offline.loc[
+            :,
+            [
+                "experimentnummer",
+                "waschen",
+                "oberflaechenspannung",
+                "anionischetenside",
+                "nichtionischentenside",
+            ],
+        ]
+        merged_data = pd.merge(
+            preprocessed_online,
+            offline_data_target,
+            left_on=["experimentnummer", "waschen"],
+            right_on=["experimentnummer", "waschen"],
+            how="inner",
+        )
+
+        merged_data_final = merged_data.reset_index(drop=True).drop(
+            columns=["experimentnummer"]
+        )
+        return merged_data_final

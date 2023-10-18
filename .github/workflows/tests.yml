@@ -19,6 +19,8 @@ jobs:
       EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
       EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
       EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
+      DVC_TOKEN: ${{ secrets.DVC_TOKEN }}
+      DVC_USERNAME: ${{ secrets.DVC_USERNAME }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v2

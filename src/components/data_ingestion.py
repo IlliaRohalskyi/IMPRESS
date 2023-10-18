@@ -104,9 +104,7 @@ class DataIngestion:
 
             query = f"SELECT * FROM {table_name};"
 
-            df = pd.read_sql_query(query, connection)
-
-            return df
+            return pd.read_sql_query(query, connection)
 
         except psycopg2.Error as error_message:
             logging.error(f"Error connecting to the database: {error_message}")
