@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pandas as pd
 from sqlalchemy import create_engine
+import psycopg2
 
 from src.pipelines.monitoring_pipeline import monitoring_pipeline
 from src.utils import get_project_root
@@ -44,7 +45,12 @@ def test_monitoring(_):
         smtp_server=smtp_server, smtp_port=smtp_port, table_name=table_name
     )
 
-    connection = engine.connect()
+    connection = psycopg2.connect(
+        host=hostname, database=database_name, user=username, password=password
+    )
+
+    cursor = connection.cursor()
+
     delete_query = f"DELETE FROM {table_name}"
-    connection.execute(delete_query)
+    cursor.execute(delete_query)
     connection.close()
