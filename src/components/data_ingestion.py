@@ -30,10 +30,10 @@ class DataIngestionConfig:
 
     offline_data_path: str = os.path.join(
         get_project_root(),
-        r"Dataset\20220311_114449_impress_backup_offlinemessungen.csv",
+        "Dataset", "20220311_114449_impress_backup_offlinemessungen.csv",
     )
     online_data_path: str = os.path.join(
-        get_project_root(), r"Dataset\20220311_114449_impress_backup_sensors.csv"
+        get_project_root(), "Dataset", "20220311_114449_impress_backup_sensors.csv"
     )
 
 
