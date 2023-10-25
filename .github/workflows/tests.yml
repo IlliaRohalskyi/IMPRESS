@@ -25,8 +25,6 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       ECR_REGION: ${{ secrets.ECR_REGION }}
       ECR_ACCOUNT_ID: ${{ secrets.ECR_ACCOUNT_ID }}
-      ECR_IMAGE_NAME_1: image-monitoring
-      ECR_IMAGE_NAME_2: image-prediction
 
     steps:
     - name: Checkout code
@@ -56,12 +54,12 @@ jobs:
 
     - name: Build and push Docker image 1
       run: |
-        docker build -t $ECR_IMAGE_NAME_1 .
-        docker tag $ECR_IMAGE_NAME_1:latest $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress/$ECR_IMAGE_NAME_1:latest
+        docker build -t Dockerfile-monitoring .
+        docker tag image-monitoring:latest $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress/$ECR_IMAGE_NAME_1:latest
         docker push $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress/$ECR_IMAGE_NAME_1:latest
 
     - name: Build and push Docker image 2
       run: |
-        docker build -t $ECR_IMAGE_NAME_2 .
-        docker tag $ECR_IMAGE_NAME_2:latest $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress/$ECR_IMAGE_NAME_2:latest
+        docker build -t Dockerfile-prediction .
+        docker tag image-prediction:latest $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress/$ECR_IMAGE_NAME_2:latest
         docker push $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress/$ECR_IMAGE_NAME_2:latest
