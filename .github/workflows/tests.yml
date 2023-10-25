@@ -48,7 +48,7 @@ jobs:
         pylint src tests
 
     - name: Download ML models
-      run: python src/components/model_loader/py
+      run: python src/components/model_loader.py
 
     - name: Login to Amazon ECR
       run: |
