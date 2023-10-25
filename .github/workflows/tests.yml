@@ -58,10 +58,10 @@ jobs:
       run: |
         docker build -t $ECR_IMAGE_NAME_1 -f Dockerfile-monitoring .
         docker tag $ECR_IMAGE_NAME_1:latest $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress/$ECR_IMAGE_NAME_1:latest
-        docker push $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress/$ECR_IMAGE_NAME_1:latest
+        docker push $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress
 
     - name: Build and push Docker image 2
       run: |
         docker build -t $ECR_IMAGE_NAME_2 -f Dockerfile-prediction .
         docker tag $ECR_IMAGE_NAME_2:latest $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress/$ECR_IMAGE_NAME_2:latest
-        docker push $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress/$ECR_IMAGE_NAME_2:latest
+        docker push $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress
