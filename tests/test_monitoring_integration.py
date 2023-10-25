@@ -3,11 +3,12 @@ This module contains an integration test for the monitoring pipeline.
 It tests the entire pipeline with a mocked SMTP server.
 """
 import os
+import shutil
 from unittest.mock import patch
 
 import pandas as pd
-from sqlalchemy import create_engine
 import psycopg2
+from sqlalchemy import create_engine
 
 from src.pipelines.monitoring_pipeline import monitoring_pipeline
 from src.utils import get_project_root
@@ -44,6 +45,8 @@ def test_monitoring(_):
     monitoring_pipeline(
         smtp_server=smtp_server, smtp_port=smtp_port, table_name=table_name
     )
+
+    shutil.rmtree(os.path.join(get_project_root(), "reports"))
 
     connection = psycopg2.connect(
         host=hostname, database=database_name, user=username, password=password

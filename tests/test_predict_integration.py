@@ -34,8 +34,6 @@ def test_pred_integration():
         pred_table_name=pred_table_name, write_table_name=archive_table_name
     )
 
-    shutil.rmtree(os.path.join(get_project_root(), "reports"))
-
     hostname = os.environ.get("DB_HOSTNAME")
     database_name = os.environ.get("DB_NAME")
     username = os.environ.get("DB_USERNAME")
