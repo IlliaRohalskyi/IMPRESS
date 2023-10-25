@@ -25,8 +25,8 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       ECR_REGION: ${{ secrets.ECR_REGION }}
       ECR_ACCOUNT_ID: ${{ secrets.ECR_ACCOUNT_ID }}
-      ECR_IMAGE_NAME_1: Dockerfile-monitoring
-      ECR_IMAGE_NAME_2: Dockerfile-prediction
+      ECR_IMAGE_NAME_1: image-monitoring
+      ECR_IMAGE_NAME_2: image-prediction
 
     steps:
     - name: Checkout code
