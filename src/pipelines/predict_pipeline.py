@@ -50,6 +50,8 @@ def load_data_and_models(
             )
             models_and_scalers.append(model_and_scalers)
         pred_data = DataIngestion().get_sql_table(table_name)
+        if len(pred_data) == 0:
+            return {}
         return {"models_and_scalers": models_and_scalers, "pred_data": pred_data}
     except Exception as error_message:
         logging.error(f"Error loading data and models: {error_message}")
@@ -198,9 +200,10 @@ def prediction_pipeline(
         write_table_name: The name of the table to write the predictions to.
     """
     result_load = load_data_and_models(pred_table_name)
-    result_transformation = data_transformation(result_load)
-    result_predict = ensemble_predict(result_transformation)
-    write_and_delete_data(result_predict, pred_table_name, write_table_name)
+    if result_load:
+        result_transformation = data_transformation(result_load)
+        result_predict = ensemble_predict(result_transformation)
+        write_and_delete_data(result_predict, pred_table_name, write_table_name)
 
 
 if __name__ == "__main__":

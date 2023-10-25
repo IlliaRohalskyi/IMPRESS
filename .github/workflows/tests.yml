@@ -1,4 +1,4 @@
-name: Test and Linting
+name: Test and Deploy
 
 on:
   push:
@@ -21,6 +21,13 @@ jobs:
       EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
       DVC_TOKEN: ${{ secrets.DVC_TOKEN }}
       DVC_USERNAME: ${{ secrets.DVC_USERNAME }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      ECR_REGION: ${{ secrets.ECR_REGION }}
+      ECR_ACCOUNT_ID: ${{ secrets.ECR_ACCOUNT_ID }}
+      ECR_IMAGE_NAME_1: Dockerfile-monitoring
+      ECR_IMAGE_NAME_2: Dockerfile-prediction
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -39,3 +46,22 @@ jobs:
     - name: Run linting
       run: |
         pylint src tests
+
+    - name: Download ML models
+      run: python download_models.py
+
+    - name: Login to Amazon ECR
+      run: |
+        aws ecr get-login-password --region $ECR_REGION | docker login --username AWS --password-stdin $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com
+
+    - name: Build and push Docker image 1
+      run: |
+        docker build -t $ECR_IMAGE_NAME_1 .
+        docker tag $ECR_IMAGE_NAME_1:latest $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress/$ECR_IMAGE_NAME_1:latest
+        docker push $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress/$ECR_IMAGE_NAME_1:latest
+
+    - name: Build and push Docker image 2
+      run: |
+        docker build -t $ECR_IMAGE_NAME_2 .
+        docker tag $ECR_IMAGE_NAME_2:latest $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress/$ECR_IMAGE_NAME_2:latest
+        docker push $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress/$ECR_IMAGE_NAME_2:latest

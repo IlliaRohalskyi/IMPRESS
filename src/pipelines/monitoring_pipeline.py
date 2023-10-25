@@ -53,6 +53,8 @@ def load_and_delete_data(table_name):
         load_dvc()
         ingestion_obj = DataIngestion()
         archived_data = ingestion_obj.get_sql_table(table_name=table_name)
+        if len(archived_data) < 10:
+            return {}
         to_delete_count = int(len(archived_data) * 0.9)
 
         archived_data_selected = archived_data.iloc[:to_delete_count]
@@ -170,8 +172,8 @@ def make_report(results):
                 output[f"{target}_report_path"] = file_path
 
         elif feature_drifts and not target_drifts:
-            cur = merged_data[[col for col in merged_data.columns if col != target]]
-            ref = archived_data[[col for col in archived_data.columns if col != target]]
+            ref = merged_data[[col for col in merged_data.columns if col != target]]
+            cur = archived_data[[col for col in archived_data.columns if col != target]]
 
             report = Report(metrics=[DataQualityPreset, DataDriftPreset()])
             report.run(current_data=cur, reference_data=ref)
@@ -251,9 +253,10 @@ def monitoring_pipeline(
         table_name (str): The name of the SQL table to load and delete data from.
     """
     data_results = load_and_delete_data(table_name)
-    report_results = make_report(data_results)
-    if report_results:
-        alert(report_results, smtp_server, smtp_port)
+    if data_results:
+        report_results = make_report(data_results)
+        if report_results:
+            alert(report_results, smtp_server, smtp_port)
 
 
 if __name__ == "__main__":
