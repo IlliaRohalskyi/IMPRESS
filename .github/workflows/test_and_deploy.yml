@@ -65,3 +65,11 @@ jobs:
         docker build -t $ECR_IMAGE_NAME_2 -f Dockerfile-prediction .
         docker tag $ECR_IMAGE_NAME_2:latest $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_2
         docker push $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_2
+    
+    - name: Delete old Docker images
+      run: |
+        OLD_IMAGES=$(aws ecr describe-images --repository-name impress --query 'imageDetails[?contains(imageTags, `-`) == `true`].imageDigest' --output text)
+        for IMAGE in $OLD_IMAGES; do
+          aws ecr batch-check-layer-availability --repository-name impress --image-digest $IMAGE
+          aws ecr batch-delete-image --repository-name impress --image-ids imageDigest=$IMAGE
+        done
