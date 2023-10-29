@@ -22,6 +22,7 @@ from sqlalchemy import create_engine
 
 from src.components.data_ingestion import DataIngestion
 from src.components.data_transformation import DataTransformation
+from src.components.model_loader import ModelAndScalers  # pylint: disable=unused-import
 from src.exception import CustomException
 from src.logger import logging
 from src.utils import get_project_root, load_pickle
