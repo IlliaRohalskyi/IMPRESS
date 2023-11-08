@@ -17,6 +17,7 @@ pytest
 scikit-learn
 scipy
 seaborn
+SQLAlchemy==1.4.49
 miceforest
 flask
 xgboost
