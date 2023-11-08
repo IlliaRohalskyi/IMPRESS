@@ -140,7 +140,7 @@ class ModelTrainer:
                     reg_alpha=trial.suggest_float("reg_alpha", 0, 1),
                     reg_lambda=trial.suggest_float("reg_lambda", 0, 1),
                 )
-            elif model_name == "rf":
+            else:
                 model = RandomForestRegressor(
                     n_estimators=trial.suggest_int("n_estimators", 5, 30000),
                     max_depth=trial.suggest_int("max_depth", 3, 30000),
@@ -205,7 +205,7 @@ class ModelTrainer:
         try:
             logging.info("Starting model training")
 
-            models = ["xgb", "rf"]
+            models = ["rf", "xgb"]
 
             with mlflow.start_run():
                 mlflow.log_param("git_hash", self.git_hash)
@@ -247,7 +247,8 @@ class ModelTrainer:
                     best_models.append(best_model)
                     best_maes.append(best_mae)
 
-                self.log_ensemble_metrics(best_maes, best_models)
+                if len(models) > 1:
+                    self.log_ensemble_metrics(best_maes, best_models)
 
         except Exception as error_message:
             logging.error(f"Initiate model training failed with error: {error_message}")

@@ -34,7 +34,7 @@ def fixture_data_transformation_obj():
     return obj
 
 
-@pytest.mark.parametrize("_", range(100))
+@pytest.mark.parametrize("_", range(20))
 def test_data_transformation(_, data_transformation_obj):
     """
     Test Data Transformation Functionality.
@@ -45,7 +45,7 @@ def test_data_transformation(_, data_transformation_obj):
     Args:
         data_transformation_obj (DataTransformation instance)
     """
-    num_online_samples = 1000
+    num_online_samples = 20000
     num_offline_samples = 100
 
     random_offline_data = {

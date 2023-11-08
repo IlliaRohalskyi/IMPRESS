@@ -22,7 +22,8 @@ from sqlalchemy import create_engine
 
 from src.components.data_ingestion import DataIngestion
 from src.components.data_transformation import DataTransformation
-from src.components.model_loader import ModelAndScalers  # pylint: disable=unused-import
+from src.components.model_loader import \
+    ModelAndScalers  # pylint: disable=unused-import
 from src.exception import CustomException
 from src.logger import logging
 from src.utils import get_project_root, load_pickle
@@ -45,7 +46,7 @@ def load_data_and_models(
     """
     try:
         models_and_scalers = []
-        for model_name in ["xgb", "rf"]:
+        for model_name in ["rf"]:
             model_and_scalers = load_pickle(
                 os.path.join(ml_downloads_path, model_name, "model_and_scalers.pkl")
             )
@@ -109,7 +110,7 @@ def ensemble_predict(result):
         dict: modified dictionary containing predictions
     """
     try:
-        weights = {"xgb": 0.49, "rf": 0.51}
+        weights = {"rf": 1}
         models_and_scalers = result["models_and_scalers"]
         output = {}
         preds_scaled = 0

@@ -35,7 +35,7 @@ class ModelAndScalers:
 
 
 def get_models(
-    model_names: Tuple[str] = ("xgb", "rf"),
+    model_names: Tuple[str] = ("rf", "xgb"),
     scalers_path: str = os.path.join(get_project_root(), "ml_downloads"),
 ):
     """
@@ -57,7 +57,6 @@ def get_models(
     try:
         if os.path.exists(scalers_path):
             shutil.rmtree(scalers_path)
-
         for model_name in model_names:
             latest_versions = mlflow.tracking.MlflowClient().get_latest_versions(
                 name=model_name, stages=["Production"]
