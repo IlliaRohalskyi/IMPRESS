@@ -70,7 +70,7 @@ def load_and_delete_data(table_name):
         cursor = connection.cursor()
 
         delete_query = (
-            f"DELETE FROM archived_data WHERE experimentnummer IN ("
+            f"DELETE FROM {table_name} WHERE experimentnummer IN ("
             f"{','.join(map(str, archived_data_selected['experimentnummer']))})"
         )
         cursor.execute(delete_query)
@@ -138,9 +138,8 @@ def make_report(results):
             if target_drifts or feature_drifts
             else {}
         )
-        print(output)
-        if target_drifts:
-            for target in target_drifts:
+        for target in target_drifts:
+            if target_drifts:
                 column_mapping = ColumnMapping()
                 column_mapping.target = target
 
@@ -171,19 +170,21 @@ def make_report(results):
 
                 output[f"{target}_report_path"] = file_path
 
-        elif feature_drifts and not target_drifts:
-            ref = merged_data[[col for col in merged_data.columns if col != target]]
-            cur = archived_data[[col for col in archived_data.columns if col != target]]
+            elif feature_drifts and not target_drifts:
+                ref = merged_data[[col for col in merged_data.columns if col != target]]
+                cur = archived_data[
+                    [col for col in archived_data.columns if col != target]
+                ]
 
-            report = Report(metrics=[DataQualityPreset, DataDriftPreset()])
-            report.run(current_data=cur, reference_data=ref)
+                report = Report(metrics=[DataQualityPreset, DataDriftPreset()])
+                report.run(current_data=cur, reference_data=ref)
 
-            dir_path = os.path.join(get_project_root(), "reports")
-            os.makedirs(dir_path, exist_ok=True)
-            file_path = os.path.join(dir_path, "drift_report.html")
-            report.save_html(file_path)
+                dir_path = os.path.join(get_project_root(), "reports")
+                os.makedirs(dir_path, exist_ok=True)
+                file_path = os.path.join(dir_path, "drift_report.html")
+                report.save_html(file_path)
 
-            output["drift_report_path"] = file_path
+                output["drift_report_path"] = file_path
         return output
     except CustomException as error_message:
         logging.error(f"Error making reports: {error_message}")
