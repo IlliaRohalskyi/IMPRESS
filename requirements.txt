@@ -11,12 +11,12 @@ optuna
 pandas
 psycopg2
 pre-commit
-prefect
+prefect==2.14.2
 pylint
 pytest
 scikit-learn
 scipy
 seaborn
-SQLAlchemy==1.4.49
+sqlalchemy==2.0.22
 miceforest
 xgboost
