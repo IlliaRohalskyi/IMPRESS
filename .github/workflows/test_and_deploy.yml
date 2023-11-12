@@ -7,7 +7,7 @@ on:
 
 jobs:
   container:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     env:
       MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
       MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
@@ -23,7 +23,7 @@ jobs:
       DVC_USERNAME: ${{ secrets.DVC_USERNAME }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      ECR_REGION: ${{ secrets.ECR_REGION }}
+      AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
       ECR_ACCOUNT_ID: ${{ secrets.ECR_ACCOUNT_ID }}
       ECR_IMAGE_NAME_1: monitoring-image
       ECR_IMAGE_NAME_2: prediction-image
@@ -52,7 +52,7 @@ jobs:
 
     - name: Login to Amazon ECR
       run: |
-        aws ecr get-login-password --region $ECR_REGION | docker login --username AWS --password-stdin $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com
+        aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
 
     - name: Capture Git commit SHA
       id: git_sha
@@ -61,21 +61,21 @@ jobs:
     - name: Build and push Docker image 1
       run: |
         docker build -t $ECR_IMAGE_NAME_1:${{ steps.git_sha.outputs.sha }} -f Dockerfile-monitoring .
-        docker tag $ECR_IMAGE_NAME_1:${{ steps.git_sha.outputs.sha }} $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_1-${{ steps.git_sha.outputs.sha }}
-        docker push $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_1-${{ steps.git_sha.outputs.sha }}
+        docker tag $ECR_IMAGE_NAME_1:${{ steps.git_sha.outputs.sha }} $ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_1-${{ steps.git_sha.outputs.sha }}
+        docker push $ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_1-${{ steps.git_sha.outputs.sha }}
 
     - name: Build and push Docker image 2
       run: |
         docker build -t $ECR_IMAGE_NAME_2:${{ steps.git_sha.outputs.sha }} -f Dockerfile-prediction .
-        docker tag $ECR_IMAGE_NAME_2:${{ steps.git_sha.outputs.sha }} $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_2-${{ steps.git_sha.outputs.sha }}
-        docker push $ECR_ACCOUNT_ID.dkr.ecr.$ECR_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_2-${{ steps.git_sha.outputs.sha }}
+        docker tag $ECR_IMAGE_NAME_2:${{ steps.git_sha.outputs.sha }} $ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_2-${{ steps.git_sha.outputs.sha }}
+        docker push $ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_2-${{ steps.git_sha.outputs.sha }}
 
     - name: Update ECS Task Definitions
       run: |
         aws ecs register-task-definition --family impress-monitoring --container-definitions '[
           {
             "name": "monitoring",
-            "image": "${ECR_ACCOUNT_ID}.dkr.ecr.${ECR_REGION}.amazonaws.com/impress:$ECR_IMAGE_NAME_1-${{ steps.git_sha.outputs.sha }}",
+            "image": "${ECR_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/impress:$ECR_IMAGE_NAME_1-${{ steps.git_sha.outputs.sha }}",
             "essential": true
           }
         ]'
@@ -83,7 +83,7 @@ jobs:
         aws ecs register-task-definition --family impress-prediction --container-definitions '[
           {
             "name": "prediction",
-            "image": "${ECR_ACCOUNT_ID}.dkr.ecr.${ECR_REGION}.amazonaws.com/impress:$ECR_IMAGE_NAME_2-${{ steps.git_sha.outputs.sha }}",
+            "image": "${ECR_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/impress:$ECR_IMAGE_NAME_2-${{ steps.git_sha.outputs.sha }}",
             "essential": true
           }
         ]'
