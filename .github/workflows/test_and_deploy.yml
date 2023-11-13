@@ -53,6 +53,9 @@ jobs:
     - name: Login to Amazon ECR
       run: |
         aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+    
+    - name: Set AWS Region
+      run: aws configure set region $AWS_DEFAULT_REGION
 
     - name: Capture Git commit SHA
       id: git_sha
