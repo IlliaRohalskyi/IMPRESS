@@ -54,8 +54,12 @@ jobs:
       run: |
         aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
     
-    - name: Set AWS Region
-      run: aws configure set region $AWS_DEFAULT_REGION
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: secrets.AWS_ACCESS_KEY_ID
+        aws-secret-access-key: AWS_SECRET_ACCESS_KEY 
+        aws-region: $AWS_DEFAULT_REGION
 
     - name: Capture Git commit SHA
       id: git_sha
