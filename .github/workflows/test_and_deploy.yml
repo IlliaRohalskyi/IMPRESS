@@ -101,13 +101,13 @@ jobs:
     - name: Deploy Amazon ECS task definition (Monitoring)
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: impress-monitoring.json
+        task-definition: ${{ steps.task-def-monitoring.outputs.task-definition }}
         wait-for-service-stability: true
         cluster: IMPRESS
       
     - name: Deploy Amazon ECS task definition (Prediction)
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: impress-prediction.json
+        task-definition: ${{ steps.task-def-prediction.outputs.task-definition }}
         wait-for-service-stability: true
         cluster: IMPRESS
