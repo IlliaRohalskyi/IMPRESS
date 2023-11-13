@@ -73,7 +73,7 @@ jobs:
     - name: Download Task Definitions
       run: |
         aws ecs describe-task-definition --task-definition impress-monitoring --query taskDefinition > task-definition-monitoring.json
-        aws ecs describe-task-definition --task-definition impress-prediction my-task-definition-family --query taskDefinition > task-definition-prediction.json
+        aws ecs describe-task-definition --task-definition impress-prediction --query taskDefinition > task-definition-prediction.json
 
     - name: Fill in the new image ID in the Amazon ECS task definition (Monitoring)
       id: task-def-monitoring
