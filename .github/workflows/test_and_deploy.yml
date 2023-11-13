@@ -66,16 +66,20 @@ jobs:
       run: echo "::set-output name=sha::$(git rev-parse --short HEAD)"
 
     - name: Build and push Docker image (Monitoring)
+      id: monitoring-docker
       run: |
         docker build -t $ECR_IMAGE_NAME_1:${{ steps.git_sha.outputs.sha }} -f Dockerfile-monitoring .
         docker tag $ECR_IMAGE_NAME_1:${{ steps.git_sha.outputs.sha }} $ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_1-${{ steps.git_sha.outputs.sha }}
         docker push $ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_1-${{ steps.git_sha.outputs.sha }}
+        echo "image=$ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_1-${{ steps.git_sha.outputs.sha }}" >> $GITHUB_OUTPUT
 
     - name: Build and push Docker image (Prediction)
+      id: prediction-docker
       run: |
         docker build -t $ECR_IMAGE_NAME_2:${{ steps.git_sha.outputs.sha }} -f Dockerfile-prediction .
         docker tag $ECR_IMAGE_NAME_2:${{ steps.git_sha.outputs.sha }} $ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_2-${{ steps.git_sha.outputs.sha }}
         docker push $ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_2-${{ steps.git_sha.outputs.sha }}
+        echo "image=$ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_2-${{ steps.git_sha.outputs.sha }}" >> $GITHUB_OUTPUT
 
     - name: Download Task Definitions
       run: |
@@ -88,7 +92,7 @@ jobs:
       with:
         task-definition: impress-monitoring.json
         container-name: monitoring
-        image: $ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_1-${{ steps.git_sha.outputs.sha }}
+        image: ${{ steps.monitoring-docker.outputs.image }}
     
     - name: Fill in the new image ID in the Amazon ECS task definition (Prediction)
       id: task-def-prediction
@@ -96,7 +100,7 @@ jobs:
       with:
         task-definition: impress-prediction.json
         container-name: prediction
-        image: $ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_2-${{ steps.git_sha.outputs.sha }}
+        image: ${{ steps.prediction-docker.outputs.image }}
     
     - name: Deploy Amazon ECS task definition (Monitoring)
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
