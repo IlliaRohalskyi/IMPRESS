@@ -79,14 +79,14 @@ jobs:
 
     - name: Download Task Definitions
       run: |
-        aws ecs describe-task-definition --task-definition impress-monitoring --query taskDefinition > task-definition-monitoring.json
-        aws ecs describe-task-definition --task-definition impress-prediction --query taskDefinition > task-definition-prediction.json
+        aws ecs describe-task-definition --task-definition impress-monitoring --query taskDefinition > impress-monitoring.json
+        aws ecs describe-task-definition --task-definition impress-prediction --query taskDefinition > impress-prediction.json
 
     - name: Fill in the new image ID in the Amazon ECS task definition (Monitoring)
       id: task-def-monitoring
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
-        task-definition: task-definition-monitoring.json
+        task-definition: impress-monitoring.json
         container-name: monitoring
         image: $ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_1-${{ steps.git_sha.outputs.sha }}
     
@@ -94,19 +94,20 @@ jobs:
       id: task-def-prediction
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
-        task-definition: task-definition-prediction.json
+        task-definition: impress-prediction.json
         container-name: prediction
         image: $ECR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/impress:$ECR_IMAGE_NAME_2-${{ steps.git_sha.outputs.sha }}
     
     - name: Deploy Amazon ECS task definition (Monitoring)
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: task-definition-monitoring.json
+        task-definition: impress-monitoring.json
         wait-for-service-stability: true
+        cluster: IMPRESS
       
     - name: Deploy Amazon ECS task definition (Prediction)
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: task-definition-prediction.json
+        task-definition: impress-prediction.json
         wait-for-service-stability: true
-      
+        cluster: IMPRESS
