@@ -1,6 +1,6 @@
 -e .
 black
-dvc==2.58.2
+    dvc==2.58.2
 evidently
 isort
 matplotlib
