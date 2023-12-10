@@ -9,7 +9,7 @@ This project is dedicated to predicting surface tension, with a focus on anionic
 Documentation for this project can be found in the `/Documentation` folder in the root directory. Feel free to explore the detailed guides and information to better understand the project structure, setup, and usage.
 
 
-<img src="https://raw.githubusercontent.com/IlliaRohalskyi/IMPRESS/main/Documentation/source/HLD/hohenstein%20logo.jpg" alt="Logo" height="400">
+<img src="https://findvectorlogo.com/wp-content/uploads/2022/02/hohenstein-vector-logo-2022.png" alt="Logo">
 
 
 ## Authors
