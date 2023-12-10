@@ -2,7 +2,7 @@
 
 Intelligentes Monitoringsystem zur Steigerung der Prozessqualität und Ressourceneffizienz in gewerblichen Wäschereien.
 
-This project is dedicated to predicting surface tension, with a focus on anionic and nonionic surfactants. Leveraging machine learning techniques, our goal is to develop models that accurately forecast surface tension values based on the properties of these surfactants. Whether you're interested in understanding the behavior of anionic or nonionic surfactants or seeking predictions for surface tension, this project provides a valuable resource for exploring and analyzing these chemical processes.
+This project is dedicated to advancing the field of surface tension prediction. Using machine learning techniques, our aim is to develop precise models that forecast surface tension values accurately along with nonionic and anionic surfactants. Whether you're delving into the intricacies of surface tension or seeking predictions for various surfactants, this project offers a valuable resource for exploring and analyzing these chemical processes. Join us in unlocking the secrets of surface tension prediction and enhancing our understanding of essential chemical phenomena.
 
 ## Documentation
 
