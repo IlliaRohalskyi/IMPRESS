@@ -1,0 +1,363 @@
+\documentclass{report}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{hyperref} % Include the hyperref package for creating hyperlinks
+
+
+\begin{document}
+\begin{titlepage}
+    \centerline{\Huge\textbf{IMPRESS Low Level Documentation}}
+    
+    \vspace*{1cm}
+    
+    \centerline{\includegraphics[width=9cm]{hohenstein logo.jpg}}
+    
+    \vspace*{1.5cm}
+    
+    \centerline{\LARGE Bönnigheim, Germany}
+    
+    \vspace*{1cm}
+    
+    \centerline{\Large\textit{Illia Rohalskyi}}
+
+    \vspace*{0.2cm}
+    
+    \centerline{\Large\textit{Dr. Igor Kogut}}
+
+    \vspace*{0.2cm}
+    
+    \centerline{\Large\textit{Elias Brohammer}}
+    
+    \vspace*{1cm}
+    
+    \centerline{\Large\textit{Version 1: 11.12.2023}}
+    
+\end{titlepage}
+
+\tableofcontents
+
+\chapter{Introduction}
+\section{Purpose of Documentation}
+
+This document serves as a comprehensive guide for developers, offering clear insights into working with the project's codebase and associated tools. It aims to facilitate seamless installation, configuration, usage, and testing of the software. While not delving into the intricate details of each module, developers can rely on the docstrings provided for methods, functions, classes, and module-level explanations to grasp the functionality of specific components. For a general overview of the software, please refer to High Level Documentation
+
+\section{Audience}
+
+Primarily designed for developers actively engaged in the project, this documentation caters to those joining the team, collaborating, or maintaining the software. It equips developers with the necessary guidance to navigate the codebase, comprehend the tools, and contribute effectively.
+
+
+\chapter{Installation}
+
+To get started with this project, please follow these installation steps. Ensure that you have Git and Python's pip package manager installed on your system. Additionally, it's crucial to use Python version 3.8.10, as this was the specific version used for developing the application. Using any other Python version may lead to inconsistencies and library conflicts. While created on a Windows system, the code is designed to run seamlessly on any other operating system
+
+\section{Cloning the Repository}
+
+Begin by cloning the project's Git repository to your local machine using the following command:
+
+\begin{verbatim}
+git clone https://github.com/IlliaRohalskyi/IMPRESS.git
+\end{verbatim}
+
+This will create a local copy of the project on your system.
+
+\section{Installing Dependencies}
+
+Navigate to the project directory using the command line, and then execute the following command to install the required Python dependencies from the 'requirements.txt' file:
+
+\begin{verbatim}
+pip install -r requirements.txt
+\end{verbatim}
+
+This will ensure that you have all the necessary libraries and packages to run the project.
+
+Please note, for Linux users it is necessary to install PostgreSQL development files. In Ubuntu, you can use following command to terminal:
+\begin{verbatim}
+sudo apt-get install libpq-dev
+\end{verbatim}
+
+\section{Setting Environment Variables}
+
+Afterward, you'll need to configure environment variables tailored to the project's specific needs. For guidance on this process, please consult the '\hyperref[chap:configuration]{Configuration}' chapter in this documentation. Keep in mind that configuring your infrastructure to pass the necessary environmental variables is expected. For additional insights into infrastructure setup, refer to the '\hyperref[chap:cloud-infrastructure]{Cloud Infrastructure}' and '\hyperref[chap:mlflow-dvc-integration]{MLflow and DVC Integration}' chapters.
+
+\section{Testing the Installation}
+
+To verify that the installation was successful, run any available unit tests. The '\hyperref[chap:troubleshooting]{Troubleshooting}' section of this documentation provides further information on running tests and ensuring the system is set up correctly.
+
+\textbf{Warning:} If there are no models in the MLflow registry, some tests may not run because the software lacks models to load. To address this, you need to train the model. Execute the following command in your terminal:
+
+\begin{verbatim}
+python src/pipelines/train_pipeline.py
+\end{verbatim}
+
+This command will train the necessary models. Additionally, make sure to label them as "Production" in the MLflow model registry. Once you've marked the models as "Production," all tests should work smoothly.
+
+With these installation steps completed, you are ready to start working with the project.
+
+
+
+
+\chapter{Configuration} \label{chap:configuration}
+\section{File Structure}
+
+The project follows a structured file hierarchy to maintain organization and accessibility. Below, we provide an overview of the main directories along with some of their key nested directories:
+
+\begin{itemize}
+  \item[$\cdot$] \texttt{/src}: This directory contains the primary source code for the application.
+
+  \begin{itemize}
+    \item[$\cdot$] \texttt{/components}: Within the \texttt{src} directory, the \texttt{components} directory houses modular components or submodules that make up the core functionality of the application.
+    \item[$\cdot$] \texttt{/pipelines}: Within the \texttt{src} directory, the \texttt{pipelines} directory stores pipelines of our software. Those pipelines are composed of components and individual functions that are specific to each pipeline. If there is a need to extend the software, those functions could be re-implemented in components folder as classes.
+    \item[$\cdot$] \texttt{/notebooks}: Within the \texttt{src} directory, the \texttt{notebooks} directory stores \texttt{.ipynb} file, which is a jupyter notebook used to explore and experiment with the data.
+  \end{itemize}
+
+  \item[$\cdot$] \texttt{/tests}: The \texttt{tests} directory serves as a central location for a testing suite.
+  \begin{itemize}
+    \item[$\cdot$] \texttt{/test\_data}: Synthetic data files are stored here, providing the initial source data for testing purposes.
+  \end{itemize}
+
+
+  \item[$\cdot$] \texttt{/Documentation}: This directory contains project-related documents, including this documentation.
+
+  \item[$\cdot$] \texttt{/Presentation}: This directory contains a presentation with regards to this project.
+
+  \item[$\cdot$] \texttt{/logs}: Log files generated by the application, such as error logs and access logs, are stored in this directory.
+
+  \item[$\cdot$] \texttt{/ml\_downloads}: Trained machine learning models used by the application are located in this directory.
+
+  \item[$\cdot$] \texttt{/artifacts}: This folder stores artifacts generated during training process.
+
+  \item[$\cdot$] \texttt{/.github/workflows}: This folder stores \texttt{.yaml} file, which is essential for CI/CD workflow, and is triggered by Github Actions.
+\end{itemize}
+
+This hierarchical file structure ensures that the project's components and resources are well-organized and easy to locate.
+\section{Environment Variables}
+To run the application successfully, several environment variables need to be set, and some of them should be treated as secrets, especially when used in GitHub Actions workflows. These environment variables are essential for various aspects of the application. Below is a list of the required environment variables along with their purposes:
+
+\begin{itemize}
+  \item[$\cdot$] \texttt{DVC\_USERNAME}: This variable is used for authentication with DVC (Data Version Control) and should be set to your DVC username.
+
+  \item[$\cdot$] \texttt{DVC\_TOKEN}: The DVC token provides secure access to your DVC repositories. It should be set to your DVC token.
+
+  \item[$\cdot$] \texttt{MLFLOW\_TRACKING\_URI}: MLflow requires this URI to connect to the MLflow tracking server. Set it to the appropriate MLflow tracking server URI.
+
+  \item[$\cdot$] \texttt{MLFLOW\_TRACKING\_USERNAME}: This is the username for authentication with the MLflow tracking server.
+
+  \item[$\cdot$] \texttt{MLFLOW\_TRACKING\_PASSWORD}: The password for authentication with the MLflow tracking server.
+
+  \item[$\cdot$] \texttt{DB\_HOSTNAME}: The hostname or IP address of the database server. This is crucial for the application to connect to the database.
+
+  \item[$\cdot$] \texttt{DB\_NAME}: Set this variable to the name of the database used by the application.
+
+  \item[$\cdot$] \texttt{DB\_PASSWORD}: The password for accessing the specified database.
+
+  \item[$\cdot$] \texttt{DB\_USERNAME}: The username used to authenticate and access the database.
+
+  \item[$\cdot$] \texttt{EMAIL\_RECIPIENT}: This environment variable represents the email address to which notifications and reports will be sent.
+
+  \item[$\cdot$] \texttt{EMAIL\_SENDER}: The email address used as the sender when sending notifications.
+
+  \item[$\cdot$] \texttt{EMAIL\_PASS}: The password associated with the email sender's account for email notifications.
+
+  \item[$\cdot$] \texttt{PREFECT\_CLOUD\_API\_TOKEN}: This variable stores the API token for authentication.
+
+
+\end{itemize}
+
+Ensure that these environment variables are correctly set and securely managed, especially when dealing with sensitive information. It's essential to store sensitive variables as secrets in GitHub Actions workflows to protect your application and data.
+
+Furthermore, there is a set of secrets specific to GitHub Actions that should be configured. These secrets are considered as environment variables, and while they might not be essential for running the application locally, they must be defined as secrets within the GitHub Actions workflow. 
+\begin{itemize}
+  \item[$\cdot$] \texttt{AWS\_ACCESS\_KEY\_ID}: The AWS access key ID is used for authenticating with AWS services. Ensure that this key is properly configured with the necessary permissions to interact with Amazon Elastic Container Registry (ECR).
+
+  \item[$\cdot$] \texttt{AWS\_SECRET\_ACCESS\_KEY}: This AWS secret access key complements the access key ID and is essential for secure authentication with AWS services, including ECR.
+
+  \item[$\cdot$] \texttt{ECR\_ACCOUNT\_ID}: The ECR account ID should be set to your AWS account ID. This ID is required for authentication when interacting with ECR, including pushing and pulling Docker images.
+
+  \item[$\cdot$] \texttt{ECR\_REGION}: Specify the AWS region in which your Amazon Elastic Container Registry is located. This region parameter ensures that the application communicates with the correct ECR registry.
+
+Ensure that you incorporate \textbf{all} the environmental variables mentioned within GitHub Actions secrets.
+\end{itemize}
+
+\section{Database Setup}
+
+To support the functionality of the application, a PostgreSQL database is required with four main tables: 'online\_data', 'archived\_data', 'test\_online\_data', and 'test\_archived\_data'. Each table serves a specific purpose and plays a crucial role in the data management and prediction pipeline. Below is an overview of these tables:
+
+\begin{itemize}
+  \item[$\cdot$] \texttt{online\_data}: This table is designed to store data received from sensors. It serves as the primary data source for the prediction pipeline, where time series data is processed and predictions are generated based on this incoming information. For a sample dataframe, please refer to the file, located in the following path: 
+\begin{verbatim}
+/tests/test_data/synthetic_online.csv
+\end{verbatim}
+  \item[$\cdot$] \texttt{archived\_data}: The \texttt{archived\_data} table is responsible for storing data received from the prediction pipeline. It includes experiment numbers, along with the associated washing/rinsing class and predictions. This historical data is valuable for analysis and monitoring. For a sample dataframe, please refer to the file, located in the following path:
+\begin{verbatim}
+/tests/test_data/synthetic_archived_data.csv
+\end{verbatim}
+  \item[$\cdot$] \texttt{test\_online\_data}: Similar to the \texttt{online\_data} table, the \texttt{test\_online\_data} table stores sensor data specifically for testing purposes. It allows for testing and validation of the prediction pipeline in a controlled environment.
+
+  \item[$\cdot$] \texttt{test\_archived\_data}: As with the \texttt{archived\_data} table, the \texttt{test\_archived\_data} table is used to store data received from the testing phase, including experiment numbers, washing/rinsing class, and test predictions. This historical test data helps evaluate the performance of the prediction pipeline in testing scenarios.
+
+\end{itemize}
+
+These tables collectively facilitate the collection, storage, and analysis of sensor data, as well as the monitoring and testing of the prediction pipeline. Properly configuring and maintaining these tables is essential for the successful operation of the application.
+
+
+\chapter{Usage}
+
+The primary use of this software involves automated deployment and execution of containerized prediction and monitoring pipelines on AWS servers. This is achieved through a CI/CD pipeline, which streamlines the deployment process. Here's a step-by-step guide to utilizing the software for this purpose:
+
+\section{Automated Deployment with CI/CD}
+
+\begin{enumerate}
+  \item \textbf{GitHub Actions Workflow}: The process begins with a GitHub Actions workflow that triggers when changes are pushed to the repository. This workflow is configured to perform testing and linting of the application.
+
+  \item \textbf{Testing and Linting}: GitHub Actions automatically conducts unit tests and checks code for compliance with coding standards. These tests ensure the software's health and quality.
+
+  \item \textbf{Containerization}: Once the tests pass successfully, GitHub Actions prepares Docker containers for the prediction and monitoring pipelines.
+
+  \item \textbf{Push to ECR}: The generated Docker containers are pushed to the Amazon Elastic Container Registry (ECR), which serves as a repository for storing Docker images.
+
+  \item \textbf{Scheduling with AWS Event Bridge}: Using AWS Event Bridge, scheduled tasks are created to run the prediction and monitoring pipelines as ECS tasks. This automated scheduling ensures that the pipelines are executed as per the defined schedule.
+
+  \item \textbf{Execution}: The prediction and monitoring pipelines are executed as ECS tasks, processing data and generating predictions. These pipelines are responsible for handling data from the 'online\_data' and 'archived\_data' tables.
+
+  \item \textbf{Monitoring and Reporting}: The monitoring pipeline captures potential data drift and generates reports. These reports are sent via email to the specified recipient using the configured email credentials.
+
+\end{enumerate}
+
+This usage scenario outlines the automated deployment of containerized prediction and monitoring pipelines, ensuring the timely and efficient processing of data. The CI/CD pipeline, GitHub Actions, AWS ECR, and AWS Event Bridge are key components in this process.
+
+For developers looking to make changes or further customize this deployment process, it's important to have a good understanding of the CI/CD pipeline, GitHub Actions configuration, AWS services, and the structure of the application. The provided instructions ensure that the software operates seamlessly in a containerized environment on AWS servers.
+
+\chapter{Cloud Infrastructure}\label{chap:cloud-infrastructure}
+
+Our chosen cloud infrastructure is AWS, selected for its reliability and robust features, providing a solid foundation for our project. However, it's important to note that the software can be reconfigured to run on a different cloud provider with some adjustments.
+
+To adapt the software to a different cloud environment, refinements in environmental variables and the GitHub Actions YAML file would be necessary. This flexibility allows for seamless integration into various cloud platforms, ensuring the software's adaptability to different infrastructures.
+
+\section{Database Hosting}
+
+We utilized AWS RDS for our database hosting, specifically hosting PostgreSQL. Our database includes four tables:
+
+\begin{itemize}
+    \item \texttt{archived\_data}
+    \item \texttt{test\_archived\_data} (used for testing during the CI/CD pipeline)
+    \item \texttt{online\_data}
+    \item \texttt{test\_online\_data} (employed for testing purposes in the CI/CD pipeline)
+\end{itemize}
+
+The differentiation between regular and test tables allows for effective software testing within our CI/CD pipeline.
+
+\section{Container Management}
+
+AWS Elastic Container Registry (ECR) serves as our repository for storing prediction and monitoring containers. Containers are versioned with corresponding Git hashes to facilitate rollback if needed. Upon each container push, the ECS task definition is automatically updated to use the latest containers.
+
+\section{ECS with Fargate}
+
+To streamline resource allocation concerns, we leveraged AWS ECS with Fargate. This choice allows us to focus on our applications without managing the underlying infrastructure intricacies.
+
+\section{Scheduled Tasks with EventBridge}
+
+AWS EventBridge orchestrates our scheduled tasks. The monitoring container runs once a month, while the prediction container is executed weekly. This ensures periodic monitoring and prediction updates as per our project requirements.
+
+\section{CI/CD and IAM Roles}
+
+Executing actions within our CI/CD pipeline necessitates specific IAM roles to ensure secure and controlled operations. These roles are carefully configured to grant the required permissions for CI/CD workflows.
+
+\section{Secrets Management}
+
+Sensitive information, such as secrets, is securely handled through AWS Parameter Store. This ensures that secrets are appropriately passed to task definitions, allowing our containers to run securely and seamlessly.
+
+Our AWS-based infrastructure provides a reliable and scalable environment, enabling efficient deployment, monitoring, and maintenance of our machine learning applications.
+
+\chapter{MLflow and DVC Integration}\label{chap:mlflow-dvc-integration}
+
+In our project, we've seamlessly integrated MLflow and DVC to enhance our machine learning workflow. This integration is specifically configured for use on Dagshub, and it's crucial to pass the correct environmental variables. Here's how we utilize these tools:
+
+\section{MLflow: Experiment Tracking and Model Registry}
+
+\begin{itemize}
+    \item \texttt{Experiment Tracking}: MLflow serves as a powerful tool for tracking machine learning experiments, allowing us to log and query experiments efficiently. This capability aids in comparing models, reproducing results, and fostering collaboration among team members.
+    \item \texttt{Model and Artifacts Registry}: MLflow provides a centralized registry for models and artifacts. This ensures a systematic approach to packaging and organizing models, making them easily reproducible and deployable across different environments.
+\end{itemize}
+
+By incorporating MLflow, we elevate our experiment tracking and model management, promoting transparency and reproducibility.
+
+\section{DVC: Data Versioning Excellence}
+
+\begin{itemize}
+    \item \texttt{Data Versioning}: DVC excels as a dedicated tool for versioning and managing large datasets. In our case, we leverage DVC primarily for data versioning, ensuring that changes to datasets are systematically tracked, reproducible, and shareable across our machine learning projects.
+\end{itemize}
+
+The integration of MLflow for experiment tracking and model registry, combined with DVC's proficiency in data versioning, creates a cohesive and efficient framework for our machine learning development. Remember to pass the correct environmental variables for this setup to function optimally on Dagshub.
+
+
+\chapter{Troubleshooting}\label{chap:troubleshooting}
+
+In the development of our software, we have prioritized robust troubleshooting mechanisms to identify and resolve issues efficiently. Two primary resources aid in this process: extensive logging and a comprehensive suite of test cases.
+
+\section{Logging}
+
+Extensive logging has been integrated into our software to capture crucial information about its execution. Log files can be found in the \texttt{/logs} folder within the root directory of the project. These logs are instrumental in identifying potential bugs, understanding the flow of execution, and diagnosing issues during various stages of the software lifecycle.
+
+When troubleshooting, examining the logs in the \texttt{/logs} folder provides valuable insights into the system's behavior, aiding developers in pinpointing the root cause of unexpected behaviors or errors.
+
+\section{Test Cases}
+
+To ensure the health and reliability of our software, we have developed a set of test cases located in the \texttt{/test} folder. This folder contains both integration and unit tests, collectively providing extensive coverage of our software's functionalities.
+
+\subsection{Integration Tests}
+
+Integration tests focus on verifying that various components of our software work together as expected. These tests simulate real-world scenarios, ensuring that the system behaves correctly in a holistic environment.
+
+\subsection{Unit Tests}
+
+Unit tests, on the other hand, target individual units of code to confirm their correctness in isolation. These tests help identify issues at the smallest level, enabling swift identification and resolution of bugs within specific functions or modules.
+
+\section{Utilizing Test Cases for Software Health}
+
+When troubleshooting, developers can leverage the test cases in the \texttt{/test} folder to validate the overall health of the software. Running both integration and unit tests aids in identifying potential issues early in the development process, fostering a proactive approach to software quality assurance.
+
+By combining thorough logging practices, a robust set of test cases, our troubleshooting mechanisms empower developers to swiftly diagnose and resolve issues, contributing to the overall stability and reliability of our software.
+
+
+\chapter{Contributing}
+
+Contributions to our software are highly welcomed! To streamline the process and maintain a cohesive codebase, follow these guidelines:
+
+\section{Isolating Components}
+
+When working on new features or improvements, isolate your changes by placing small, self-contained components in the \texttt{/components} folder under the \texttt{/src} directory. This modular approach ensures that each component can be developed, tested, and integrated independently.
+
+\section{Combining Components in Pipelines}
+
+Once you have successfully developed and tested your components, combine them in the \texttt{/pipelines} folder, also under the \texttt{/src} directory. This folder houses orchestrated sequences of components, forming the backbone of our machine learning workflows.
+
+\section{Code Style Guidelines}
+
+Maintaining a consistent code style is essential for a collaborative and readable codebase. We adhere to the PEP8 code style guidelines with specific exceptions: R0903, R0914, R0801.
+
+\section{Code Formatting Tools}
+
+To ensure code consistency and readability, we utilize the following tools:
+
+\begin{itemize}
+    \item[$\cdot$] \texttt{isort:} A tool for sorting imports alphabetically, creating a clean and organized import section in your code.
+    \item[$\cdot$] \texttt{black:} A code formatter that automatically reformats your code to comply with PEP8 standards, reducing manual formatting efforts.
+\end{itemize}
+
+Integrating these tools into your workflow helps maintain a unified code style and enhances the overall quality of the codebase.
+
+\section{Submitting Changes}
+
+When ready to contribute, follow these steps:
+
+\begin{enumerate}
+    \item Fork the repository.
+    \item Create a new branch for your changes.
+    \item Make your modifications, adhering to the guidelines mentioned above.
+    \item Ensure that your changes pass all existing tests.
+    \item Submit a pull request with a clear description of your changes and their purpose.
+    \item Collaborate with other contributors and address feedback as needed.
+\end{enumerate}
+
+By following these guidelines, you contribute to the success and maintainability of our software. Thank you for your contributions!
+
+\end{document}
