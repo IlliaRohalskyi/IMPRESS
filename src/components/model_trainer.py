@@ -480,8 +480,6 @@ class ModelTrainer:
                     }
                 )
 
-                print(ref, cur)
-
                 reg_performance_report = Report(metrics=[RegressionPreset()])
 
                 reg_performance_report.run(
