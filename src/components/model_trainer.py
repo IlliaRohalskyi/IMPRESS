@@ -17,6 +17,7 @@ Usage:
     to train models using hyperparameter optimization, and log results and artifacts to MLflow.
 """
 import os
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -62,7 +63,9 @@ class ModelTrainerPaths:
         get_project_root(), "artifacts/data_processing/target_scaler.pkl"
     )
 
-    explainability_path = os.path.join(get_project_root(), "artifacts/explainability")
+    explainability_path = os.path.join(
+        get_project_root(), "artifacts", "explainability"
+    )
 
 
 class ModelTrainer:
@@ -100,7 +103,7 @@ class ModelTrainer:
             if model_name == "rf":
                 model = RandomForestRegressor(**best_params)
             elif model_name == "xgb":
-                model = XGBRegressor(tree_method="gpu_hist", **best_params)
+                model = XGBRegressor(**best_params)
             else:
                 raise ValueError(f"Unsupported model name: {model_name}")
 
@@ -329,6 +332,11 @@ class ModelTrainer:
             self.regression_report(
                 train_predictions_scaled, test_predictions_scaled, "ensemble"
             )
+            mlflow.log_artifacts(
+                self.trainer_paths.explainability_path,
+                artifact_path="explainability",
+            )
+            shutil.rmtree(self.trainer_paths.explainability_path)
 
             ensemble_mae = mean_absolute_error(
                 y_test_scaled, test_predictions_scaled, multioutput="raw_values"
@@ -423,7 +431,7 @@ class ModelTrainer:
                     self.trainer_paths.explainability_path,
                     artifact_path="explainability",
                 )
-
+                shutil.rmtree(self.trainer_paths.explainability_path)
             return (best_model, study.best_value if study is not None else None)
 
         except Exception as error_message:
@@ -441,6 +449,7 @@ class ModelTrainer:
             train_pred (np.ndarray): The train predictions (inverse transformed)
         """
         try:
+            os.makedirs(self.trainer_paths.explainability_path, exist_ok=True)
             targets = [
                 "oberflaechenspannung",
                 "anionischetenside",
@@ -454,7 +463,6 @@ class ModelTrainer:
                 curr_target_name = targets[i]
                 curr_train_pred = train_pred[:, i]
                 curr_test_pred = test_pred[:, i]
-
                 column_mapping = ColumnMapping()
                 column_mapping.target = curr_target_name
                 column_mapping.prediction = "Prediction"
@@ -471,6 +479,8 @@ class ModelTrainer:
                         "Prediction": curr_test_pred,
                     }
                 )
+
+                print(ref, cur)
 
                 reg_performance_report = Report(metrics=[RegressionPreset()])
 

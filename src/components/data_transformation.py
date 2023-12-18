@@ -11,7 +11,6 @@ from typing import List
 import miceforest as mf
 import numpy as np
 import pandas as pd
-from scipy.signal import savgol_filter
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
@@ -183,30 +182,8 @@ class DataTransformation:
                     "fluss1",
                     "ph",
                     "leitfaehigkeit",
-                    "timestamp",
                 ]
             ]
-
-            window_length = 200
-            polyorder = 5
-
-            def apply_time_series_filter(data, window_length, polyorder):
-                data_sorted = data.sort_values(by="timestamp", ascending=True)
-                for col in data.columns:
-                    if col not in ["experimentnummer", "waschen", "timestamp"]:
-                        data_sorted[col] = savgol_filter(
-                            data_sorted[col], window_length, polyorder
-                        )
-                return data_sorted
-
-            filtered_df = online_data_dropped.groupby(
-                ["experimentnummer", "waschen"]
-            ).apply(
-                lambda group: apply_time_series_filter(group, window_length, polyorder)
-            )
-            filtered_df = filtered_df.reset_index(drop=True)
-
-            filtered_df.drop(columns=["timestamp"], inplace=True)
 
             stat_functions = [
                 "mean",
@@ -216,7 +193,7 @@ class DataTransformation:
                 lambda x: x.quantile(0.75),
             ]
 
-            online_data_final = filtered_df.groupby(
+            online_data_final = online_data_dropped.groupby(
                 ["experimentnummer", "waschen"]
             ).agg(stat_functions)
 

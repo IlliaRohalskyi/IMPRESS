@@ -46,7 +46,7 @@ def load_data_and_models(
     """
     try:
         models_and_scalers = []
-        for model_name in ["rf"]:
+        for model_name in ["rf", "xgb"]:
             model_and_scalers = load_pickle(
                 os.path.join(ml_downloads_path, model_name, "model_and_scalers.pkl")
             )
@@ -110,7 +110,7 @@ def ensemble_predict(result):
         dict: modified dictionary containing predictions
     """
     try:
-        weights = {"rf": 1}
+        weights = {"rf": 0.51, "xgb": 0.49}
         models_and_scalers = result["models_and_scalers"]
         output = {}
         preds_scaled = 0
