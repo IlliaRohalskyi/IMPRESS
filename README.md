@@ -12,10 +12,6 @@ This project is dedicated to advancing the field of surface tension prediction. 
 
 Documentation for this project can be found in the `/Documentation` folder in the root directory. Feel free to explore the detailed guides and information to better understand the project structure, setup, and usage.
 
-
-<img src="https://uploads-ssl.webflow.com/5c6aecb792a5f687ab46d3b4/63e2791dadefa027c17bc7c9_Hohenstein_Logo.png" alt="Logo">
-
-
 ## Authors
 
 - [@IlliaRohalskyi](https://www.github.com/IlliaRohalskyi)
