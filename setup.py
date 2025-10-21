@@ -1,7 +1,7 @@
 """
 Setup Module.
 
-This module provides a setup configuration for the IMPRESS project.
+This module provides a setup configuration for the ReProTENSID project.
 
 The setup configuration includes package details, version, and installation requirements.
 """
@@ -33,7 +33,7 @@ def get_requirements(filepath: str) -> List[str]:
 
 
 setup(
-    name="IMPRESS",
+    name="ReProTENSID",
     version="0.0.1",
     packages=find_packages(),
     install_requires=get_requirements("requirements.txt"),
